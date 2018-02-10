@@ -1,0 +1,11 @@
+name: aggie
+version: 0.0.0
+
+category: Web
+description: Aggie aggregates Haskell Weekly feeds.
+extra-source-files: README.markdown
+github: tfausak/aggie
+license-file: LICENSE.markdown
+license: MIT
+maintainer: Taylor Fausak
+synopsis: Aggregates Haskell Weekly feeds.
