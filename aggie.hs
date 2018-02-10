@@ -35,16 +35,14 @@ main = do
 
 sources :: Set.Set Source
 sources = Set.fromList
-  [ Source
-    { sourceName = toName "Taylor Fausak"
-    , sourceUrl = toUrl "http://taylor.fausak.me"
-    , sourceFeed = Just (toUrl "http://taylor.fausak.me/sitemap.atom")
-    }
-  , Source
-    { sourceName = toName "FP Complete"
-    , sourceUrl = toUrl "https://www.fpcomplete.com"
-    , sourceFeed = Just (toUrl "https://www.fpcomplete.com/blog/atom.xml")
-    }
+  [ toSource
+    "Taylor Fausak"
+    "http://taylor.fausak.me"
+    (Just "http://taylor.fausak.me/sitemap.atom")
+  , toSource
+    "FP Complete"
+    "https://www.fpcomplete.com"
+    (Just "https://www.fpcomplete.com/blog/atom.xml")
   ]
 
 data Source = Source
@@ -52,6 +50,13 @@ data Source = Source
   , sourceUrl :: Url
   , sourceFeed :: Maybe Url
   } deriving (Eq, Ord, Show)
+
+toSource :: String -> String -> Maybe String -> Source
+toSource name url feed = Source
+  { sourceName = toName name
+  , sourceUrl = toUrl url
+  , sourceFeed = fmap toUrl feed
+  }
 
 data Item = Item
   { itemName :: Name
