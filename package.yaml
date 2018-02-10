@@ -9,3 +9,14 @@ license-file: LICENSE.markdown
 license: MIT
 maintainer: Taylor Fausak
 synopsis: Aggregates Haskell Weekly feeds.
+
+executable:
+  dependencies:
+    - base >= 4.10.1 && < 4.11
+  ghc-options:
+    - -rtsopts
+    - -threaded
+    - -Weverything
+    - -Wno-implicit-prelude
+    - -Wno-safe
+  main: aggie.hs
