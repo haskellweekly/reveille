@@ -29,7 +29,9 @@ main = do
       Foldable.for_ (Feed.parseFeedSource (Client.responseBody response)) (\ feed -> do
         Foldable.for_ (Feed.feedItems feed) (\ feedItem -> do
           Foldable.for_ (toItem feedItem) (\ item -> do
-            print item)))))
+            Printf.printf "  - %s: %s\n"
+              (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
+              (fromName (itemName item)))))))
 
 sources :: Set.Set Source
 sources = Set.fromList
