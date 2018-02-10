@@ -22,16 +22,12 @@ main = do
       (fromName (sourceName source))
       (fromUrl (sourceUrl source))
 
-    Foldable.for_ (sourceFeed source) (\ url -> do
-      request <- Client.parseUrlThrow (fromUrl url)
-      response <- Client.httpLbs request manager
+    items <- getSourceItems manager source
 
-      Foldable.for_ (Feed.parseFeedSource (Client.responseBody response)) (\ feed -> do
-        Foldable.for_ (Feed.feedItems feed) (\ feedItem -> do
-          Foldable.for_ (toItem feedItem) (\ item -> do
-            Printf.printf "  - %s: %s\n"
-              (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
-              (fromName (itemName item)))))))
+    Foldable.for_ items (\ item -> do
+      Printf.printf "  - %s: %s\n"
+        (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
+        (fromName (itemName item))))
 
 sources :: Set.Set Source
 sources = Set.fromList
@@ -44,6 +40,25 @@ sources = Set.fromList
     "https://www.fpcomplete.com"
     (Just "https://www.fpcomplete.com/blog/atom.xml")
   ]
+
+getSourceItems :: Client.Manager -> Source -> IO (Set.Set Item)
+getSourceItems manager source = do
+  url <- case sourceFeed source of
+    Nothing -> fail "no feed"
+    Just url -> pure url
+
+  request <- Client.parseUrlThrow (fromUrl url)
+  response <- Client.httpLbs request manager
+
+  feed <- case Feed.parseFeedSource (Client.responseBody response) of
+    Nothing -> fail "invalid feed"
+    Just feed -> pure feed
+
+  items <- case mapM toItem (Feed.feedItems feed) of
+    Nothing -> fail "invalid item"
+    Just items -> pure items
+
+  pure (Set.fromList items)
 
 data Source = Source
   { sourceName :: Name
