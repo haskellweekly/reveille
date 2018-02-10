@@ -8,6 +8,7 @@ import qualified Data.Text as Text
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.TLS as Client
 import qualified Text.Printf as Printf
+import qualified Text.Feed.Import as Feed
 
 main :: IO ()
 main = do
@@ -20,8 +21,10 @@ main = do
 
     Foldable.for_ (sourceFeed source) (\ url -> do
       request <- Client.parseUrlThrow (fromUrl url)
-      response <- Client.httpNoBody request manager
-      print response))
+      response <- Client.httpLbs request manager
+
+      Foldable.for_ (Feed.parseFeedSource (Client.responseBody response)) (\ feed -> do
+        print feed)))
 
 sources :: Set.Set Source
 sources = Set.fromList
