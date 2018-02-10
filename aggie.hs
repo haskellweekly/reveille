@@ -5,10 +5,13 @@ module Main
 import qualified Data.Foldable as Foldable
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Time as Time
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.TLS as Client
-import qualified Text.Printf as Printf
 import qualified Text.Feed.Import as Feed
+import qualified Text.Feed.Query as Feed
+import qualified Text.Feed.Types as Feed
+import qualified Text.Printf as Printf
 
 main :: IO ()
 main = do
@@ -24,7 +27,9 @@ main = do
       response <- Client.httpLbs request manager
 
       Foldable.for_ (Feed.parseFeedSource (Client.responseBody response)) (\ feed -> do
-        print feed)))
+        Foldable.for_ (Feed.feedItems feed) (\ feedItem -> do
+          Foldable.for_ (toItem feedItem) (\ item -> do
+            print item)))))
 
 sources :: Set.Set Source
 sources = Set.fromList
@@ -45,6 +50,23 @@ data Source = Source
   , sourceUrl :: Url
   , sourceFeed :: Maybe Url
   } deriving (Eq, Ord, Show)
+
+data Item = Item
+  { itemName :: Name
+  , itemUrl :: Url
+  , itemTime :: Maybe Time.UTCTime
+  } deriving (Eq, Ord, Show)
+
+toItem :: Feed.Item -> Maybe Item
+toItem feedItem = do
+  name <- Feed.getItemTitle feedItem
+  url <- Feed.getItemLink feedItem
+  time <- Feed.getItemPublishDate feedItem
+  pure Item
+    { itemName = Name name
+    , itemUrl = Url url
+    , itemTime = time
+    }
 
 newtype Name = Name
   { unwrapName :: Text.Text
