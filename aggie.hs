@@ -5,14 +5,23 @@ module Main
 import qualified Data.Foldable as Foldable
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Network.HTTP.Client as Client
+import qualified Network.HTTP.Client.TLS as Client
 import qualified Text.Printf as Printf
 
 main :: IO ()
 main = do
+  manager <- Client.newTlsManager
+
   Foldable.for_ sources (\ source -> do
     Printf.printf "- %s <%s>\n"
       (fromName (sourceName source))
-      (fromUrl (sourceUrl source)))
+      (fromUrl (sourceUrl source))
+
+    Foldable.for_ (sourceFeed source) (\ url -> do
+      request <- Client.parseUrlThrow (fromUrl url)
+      response <- Client.httpNoBody request manager
+      print response))
 
 sources :: Set.Set Source
 sources = Set.fromList
@@ -20,6 +29,11 @@ sources = Set.fromList
     { sourceName = toName "Taylor Fausak"
     , sourceUrl = toUrl "http://taylor.fausak.me"
     , sourceFeed = Just (toUrl "http://taylor.fausak.me/sitemap.atom")
+    }
+  , Source
+    { sourceName = toName "FP Complete"
+    , sourceUrl = toUrl "https://www.fpcomplete.com"
+    , sourceFeed = Just (toUrl "https://www.fpcomplete.com/blog/atom.xml")
     }
   ]
 

@@ -14,6 +14,8 @@ executable:
   dependencies:
     - base >= 4.10.1 && < 4.11
     - containers >= 0.5.10 && < 0.6
+    - http-client >= 0.5.7 && < 0.6
+    - http-client-tls >= 0.3.5 && < 0.4
     - text >= 1.2.2 && < 1.3
   ghc-options:
     - -rtsopts
@@ -21,4 +23,5 @@ executable:
     - -Weverything
     - -Wno-implicit-prelude
     - -Wno-safe
+    - -Wno-unsafe
   main: aggie.hs
