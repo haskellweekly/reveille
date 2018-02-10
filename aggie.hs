@@ -2,7 +2,9 @@ module Main
   ( main
   ) where
 
+import qualified Control.Concurrent.STM as Stm
 import qualified Data.Foldable as Foldable
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Time as Time
@@ -16,6 +18,7 @@ import qualified Text.Printf as Printf
 main :: IO ()
 main = do
   manager <- Client.newTlsManager
+  database <- Stm.newTVarIO (Map.empty :: Map.Map Source (Set.Set Item))
 
   Foldable.for_ sources (\ source -> do
     Printf.printf "- %s <%s>\n"
@@ -23,11 +26,15 @@ main = do
       (fromUrl (sourceUrl source))
 
     items <- getSourceItems manager source
+    Stm.atomically (Stm.modifyTVar database (Map.insertWith Set.union source items))
 
     Foldable.for_ items (\ item -> do
       Printf.printf "  - %s: %s\n"
         (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
         (fromName (itemName item))))
+
+  x <- Stm.readTVarIO database
+  print x
 
 sources :: Set.Set Source
 sources = Set.fromList
