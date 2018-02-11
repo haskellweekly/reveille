@@ -5,7 +5,9 @@ module Main
 import qualified Control.Concurrent.STM as Stm
 import qualified Data.Either as Either
 import qualified Data.Foldable as Foldable
+import qualified Data.List as List
 import qualified Data.Map as Map
+import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -47,10 +49,16 @@ main = do
     case (method, path) of
       ("GET", ["feed.atom"]) -> do
         now <- Time.getCurrentTime
-        let feed = Atom.nullFeed
+        let initialFeed = Atom.nullFeed
               (Text.pack "https://haskellweekly.news")
               (Atom.TextString (Text.pack "Haskell Weekly"))
               (Text.pack (Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z" now))
+        db <- Stm.readTVarIO database
+        let items = getAllDatabaseItems db
+        -- TODO: Something in here is inserting extra namespaces. The <feed>
+        -- has a top level `xmlns` attribute, yet child nodes also define
+        -- `xmlns:ns` and then `ns:foo`.
+        let feed = initialFeed { Atom.feedEntries = map itemToEntry items }
         let element = Atom.xmlFeed feed
         let conduitElement = Either.fromRight undefined (Xml.fromXMLElement element)
         let document = Xml.Document (Xml.Prologue [] Nothing []) conduitElement []
@@ -125,6 +133,21 @@ toItem feedItem = do
     , itemTime = time
     }
 
+itemToEntry :: (Source, Item) -> Atom.Entry
+itemToEntry (_, item) =
+  let
+    url = unwrapUrl (itemUrl item)
+    entry = Atom.nullEntry
+      url
+      (Atom.TextString (unwrapName (itemName item)))
+      (Text.pack (maybe
+        "2000-01-01T00:00:00+0000"
+        (Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z")
+        (itemTime item)))
+  in entry
+    { Atom.entryLinks = [Atom.nullLink url]
+    }
+
 newtype Name = Name
   { unwrapName :: Text.Text
   } deriving (Eq, Ord, Show)
@@ -154,3 +177,10 @@ initialDatabase = Database Map.empty
 
 updateDatabase :: Source -> Set.Set Item -> Database -> Database
 updateDatabase source items database = Database (Map.insertWith Set.union source items (unwrapDatabase database))
+
+getAllDatabaseItems :: Database -> [(Source, Item)]
+getAllDatabaseItems database = List.sortBy
+  (Ord.comparing (\ (_, item) -> Ord.Down (itemTime item)))
+  (concatMap
+    (\ (source, items) -> map (\ item -> (source, item)) (Set.toList items))
+    (Map.toList (unwrapDatabase database)))
