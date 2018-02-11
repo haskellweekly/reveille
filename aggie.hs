@@ -3,6 +3,7 @@ module Main
   ) where
 
 import qualified Control.Concurrent.STM as Stm
+import qualified Data.Either as Either
 import qualified Data.Foldable as Foldable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -14,10 +15,13 @@ import qualified Network.HTTP.Client.TLS as Client
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
+import qualified Text.Feed.Constructor as Feed
+import qualified Text.Feed.Export as Feed
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
 import qualified Text.Printf as Printf
+import qualified Text.XML as Xml
 
 main :: IO ()
 main = do
@@ -41,7 +45,15 @@ main = do
     let method = Text.unpack (Text.decodeUtf8 (Wai.requestMethod request))
     let path = map Text.unpack (Wai.pathInfo request)
     case (method, path) of
-      ("GET", ["feed.atom"]) -> respond (Wai.responseLBS Http.notImplemented501 [] mempty)
+      ("GET", ["feed.atom"]) -> do
+        let feed = Feed.newFeed Feed.AtomKind
+        let element = Feed.xmlFeed feed
+        let conduitElement = Either.fromRight undefined (Xml.fromXMLElement element)
+        let document = Xml.Document (Xml.Prologue [] Nothing []) conduitElement []
+        respond (Wai.responseLBS
+          Http.ok200
+          [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
+          (Xml.renderLBS Xml.def document))
       _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 sources :: Set.Set Source
