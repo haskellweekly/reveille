@@ -10,6 +10,9 @@ import qualified Data.Text as Text
 import qualified Data.Time as Time
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.TLS as Client
+import qualified Network.HTTP.Types as Http
+import qualified Network.Wai as Wai
+import qualified Network.Wai.Handler.Warp as Warp
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
@@ -33,8 +36,8 @@ main = do
         (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
         (fromName (itemName item))))
 
-  x <- Stm.readTVarIO database
-  print x
+  Warp.run 3000 (\ _request respond ->
+    respond (Wai.responseLBS Http.ok200 [] mempty))
 
 sources :: Set.Set Source
 sources = Set.fromList
