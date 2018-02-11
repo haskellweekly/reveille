@@ -18,7 +18,7 @@ import qualified Text.Printf as Printf
 main :: IO ()
 main = do
   manager <- Client.newTlsManager
-  database <- Stm.newTVarIO (Map.empty :: Map.Map Source (Set.Set Item))
+  database <- Stm.newTVarIO initialDatabase
 
   Foldable.for_ sources (\ source -> do
     Printf.printf "- %s <%s>\n"
@@ -26,7 +26,7 @@ main = do
       (fromUrl (sourceUrl source))
 
     items <- getSourceItems manager source
-    Stm.atomically (Stm.modifyTVar database (Map.insertWith Set.union source items))
+    Stm.atomically (Stm.modifyTVar database (updateDatabase source items))
 
     Foldable.for_ items (\ item -> do
       Printf.printf "  - %s: %s\n"
@@ -116,3 +116,13 @@ toUrl string = Url (Text.pack string)
 
 fromUrl :: Url -> String
 fromUrl url = Text.unpack (unwrapUrl url)
+
+newtype Database = Database
+  { unwrapDatabase :: Map.Map Source (Set.Set Item)
+  } deriving (Eq, Ord, Show)
+
+initialDatabase :: Database
+initialDatabase = Database Map.empty
+
+updateDatabase :: Source -> Set.Set Item -> Database -> Database
+updateDatabase source items database = Database (Map.insertWith Set.union source items (unwrapDatabase database))
