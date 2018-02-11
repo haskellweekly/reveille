@@ -15,8 +15,8 @@ import qualified Network.HTTP.Client.TLS as Client
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
-import qualified Text.Feed.Constructor as Feed
-import qualified Text.Feed.Export as Feed
+import qualified Text.Atom.Feed as Atom
+import qualified Text.Atom.Feed.Export as Atom
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
@@ -46,8 +46,12 @@ main = do
     let path = map Text.unpack (Wai.pathInfo request)
     case (method, path) of
       ("GET", ["feed.atom"]) -> do
-        let feed = Feed.newFeed Feed.AtomKind
-        let element = Feed.xmlFeed feed
+        now <- Time.getCurrentTime
+        let feed = Atom.nullFeed
+              (Text.pack "https://haskellweekly.news")
+              (Atom.TextString (Text.pack "Haskell Weekly"))
+              (Text.pack (Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z" now))
+        let element = Atom.xmlFeed feed
         let conduitElement = Either.fromRight undefined (Xml.fromXMLElement element)
         let document = Xml.Document (Xml.Prologue [] Nothing []) conduitElement []
         respond (Wai.responseLBS
