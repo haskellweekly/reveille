@@ -7,6 +7,7 @@ import qualified Data.Foldable as Foldable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.TLS as Client
@@ -36,8 +37,12 @@ main = do
         (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
         (fromName (itemName item))))
 
-  Warp.run 3000 (\ _request respond ->
-    respond (Wai.responseLBS Http.ok200 [] mempty))
+  Warp.run 3000 (\ request respond -> do
+    let method = Text.unpack (Text.decodeUtf8 (Wai.requestMethod request))
+    let path = map Text.unpack (Wai.pathInfo request)
+    case (method, path) of
+      ("GET", ["feed.atom"]) -> respond (Wai.responseLBS Http.notImplemented501 [] mempty)
+      _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 sources :: Set.Set Source
 sources = Set.fromList
