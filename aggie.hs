@@ -3,10 +3,10 @@ module Main
   ) where
 
 import qualified Control.Concurrent.STM as Stm
-import qualified Data.Either as Either
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
@@ -17,8 +17,6 @@ import qualified Network.HTTP.Client.TLS as Client
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
-import qualified Text.Atom.Feed as Atom
-import qualified Text.Atom.Feed.Export as Atom
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
@@ -40,7 +38,7 @@ main = do
 
     Foldable.for_ items (\ item -> do
       Printf.printf "  - %s: %s\n"
-        (maybe "0000-00-00" (Time.formatTime Time.defaultTimeLocale "%Y-%m-%d") (itemTime item))
+        (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))
         (fromName (itemName item))))
 
   Warp.run 3000 (\ request respond -> do
@@ -48,29 +46,48 @@ main = do
     let path = map Text.unpack (Wai.pathInfo request)
     case (method, path) of
       ("GET", ["feed.atom"]) -> do
-        now <- Time.getCurrentTime
-        let initialFeed = Atom.nullFeed
-              (Text.pack "https://haskellweekly.news")
-              (Atom.TextString (Text.pack "Haskell Weekly"))
-              (Text.pack (Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z" now))
         db <- Stm.readTVarIO database
         let items = getAllDatabaseItems db
-        -- TODO: Something in here is inserting extra namespaces. The <feed>
-        -- has a top level `xmlns` attribute, yet child nodes also define
-        -- `xmlns:ns` and then `ns:foo`.
-        let feed = initialFeed { Atom.feedEntries = map itemToEntry items }
-        let element = Atom.xmlFeed feed
-        let conduitElement = Either.fromRight undefined (Xml.fromXMLElement element)
-        let document = Xml.Document (Xml.Prologue [] Nothing []) conduitElement []
-        let settings = Xml.def
-              { Xml.rsAttrOrder = \ _ attributes -> Map.toAscList attributes
-              , Xml.rsPretty = True
-              }
+        let entries = map itemToEntry items
+        now <- Time.getCurrentTime
+        let feed = xmlElement
+              "feed"
+              [("xmlns", "http://www.w3.org/2005/Atom")]
+              ( xmlNode "title" [] [xmlContent "Haskell Weekly"]
+              : xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
+              : xmlNode "updated" [] [xmlContent (rfc3339 now)]
+              : xmlNode "link" [("rel", "self"), ("href", "https://aggie.haskellweekly.news/feed.atom")] []
+              : entries
+              )
+        let document = xmlDocument feed
         respond (Wai.responseLBS
           Http.ok200
           [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
-          (Xml.renderLBS settings document))
+          (Xml.renderLBS Xml.def document))
       _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
+
+xmlName :: String -> Xml.Name
+xmlName string = Xml.Name (Text.pack string) Nothing Nothing
+
+xmlElement :: String -> [(String, String)] -> [Xml.Node] -> Xml.Element
+xmlElement name attributes children = Xml.Element
+  (xmlName name)
+  (Map.fromList (map (\ (k, v) -> (xmlName k, Text.pack v)) attributes))
+  children
+
+xmlNode :: String -> [(String, String)] -> [Xml.Node] -> Xml.Node
+xmlNode name attributes children = Xml.NodeElement (xmlElement name attributes children)
+
+xmlContent :: String -> Xml.Node
+xmlContent string = Xml.NodeContent (Text.pack string)
+
+xmlDocument :: Xml.Element -> Xml.Document
+xmlDocument element = Xml.Document (Xml.Prologue [] Nothing []) element []
+
+-- TODO: This should use `%Ez` for the time zone offset to get `+HH:MM` instead
+-- of `+HHMM`, but that modifier isn't available in `time` < 1.9.
+rfc3339 :: Time.UTCTime -> String
+rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z" time
 
 sources :: Set.Set Source
 sources = Set.fromList
@@ -133,20 +150,23 @@ toItem feedItem = do
     , itemTime = time
     }
 
-itemToEntry :: (Source, Item) -> Atom.Entry
-itemToEntry (_, item) =
-  let
-    url = unwrapUrl (itemUrl item)
-    entry = Atom.nullEntry
-      url
-      (Atom.TextString (unwrapName (itemName item)))
-      (Text.pack (maybe
-        "2000-01-01T00:00:00+0000"
-        (Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z")
-        (itemTime item)))
-  in entry
-    { Atom.entryLinks = [Atom.nullLink url]
-    }
+itemToEntry :: (Source, Item) -> Xml.Node
+itemToEntry (source, item) =
+  let url = fromUrl (itemUrl item)
+  in xmlNode "entry" []
+    [ xmlNode "title" [] [Xml.NodeContent (unwrapName (itemName item))]
+    , xmlNode "id" [] [xmlContent url]
+    , xmlNode "updated" [] [xmlContent (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))]
+    , xmlNode "link" [("href", url)] []
+    , xmlNode "author" []
+      [ xmlNode "name" [] [Xml.NodeContent (unwrapName (sourceName source))]
+      , xmlNode "uri" [] [Xml.NodeContent (unwrapUrl (sourceUrl source))]
+      ]
+    , xmlNode "summary" [] [Xml.NodeContent (unwrapName (sourceName source))]
+    ]
+
+unixEpoch :: Time.UTCTime
+unixEpoch = Time.UTCTime (Time.fromGregorian 1970 1 1) 0
 
 newtype Name = Name
   { unwrapName :: Text.Text
