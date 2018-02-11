@@ -54,10 +54,14 @@ main = do
         let element = Atom.xmlFeed feed
         let conduitElement = Either.fromRight undefined (Xml.fromXMLElement element)
         let document = Xml.Document (Xml.Prologue [] Nothing []) conduitElement []
+        let settings = Xml.def
+              { Xml.rsAttrOrder = \ _ attributes -> Map.toAscList attributes
+              , Xml.rsPretty = True
+              }
         respond (Wai.responseLBS
           Http.ok200
           [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
-          (Xml.renderLBS Xml.def document))
+          (Xml.renderLBS settings document))
       _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 sources :: Set.Set Source
