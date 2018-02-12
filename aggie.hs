@@ -3,6 +3,7 @@ module Main
   ) where
 
 import qualified Control.Concurrent.STM as Stm
+import qualified Control.Exception as Exception
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -33,7 +34,11 @@ main = do
       (fromName (sourceName source))
       (fromUrl (sourceUrl source))
 
-    items <- getSourceItems manager source
+    items <- Exception.catch
+      (getSourceItems manager source)
+      (\ exception -> do
+        print (exception :: Exception.IOException)
+        pure Set.empty)
     Stm.atomically (Stm.modifyTVar database (updateDatabase source items))
 
     Foldable.for_ items (\ item -> do
