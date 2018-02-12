@@ -203,7 +203,6 @@ itemToEntry (source, item) =
       [ xmlNode "name" [] [Xml.NodeContent (unwrapName (sourceName source))]
       , xmlNode "uri" [] [Xml.NodeContent (unwrapUrl (sourceUrl source))]
       ]
-    , xmlNode "summary" [] [Xml.NodeContent (unwrapName (sourceName source))]
     ]
 
 unixEpoch :: Time.UTCTime
