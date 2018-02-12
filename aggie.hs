@@ -104,6 +104,42 @@ sources = Set.fromList
     "FP Complete"
     "https://www.fpcomplete.com"
     (Just "https://www.fpcomplete.com/blog/atom.xml")
+  , toSource
+    "Ben Gamari"
+    "https://tomsmalley.github.io"
+    Nothing
+  , toSource
+    "Gabriel Gonzalez"
+    "http://www.haskellforall.com"
+    (Just "http://www.haskellforall.com/feeds/posts/default")
+  , toSource
+    "Tweag I/O"
+    "https://www.tweag.io"
+    (Just "https://www.tweag.io/rss.xml")
+  , toSource
+    "Vaibhav Sagar"
+    "http://vaibhavsagar.com"
+    (Just "http://vaibhavsagar.com/atom.xml")
+  , toSource
+    "Joachim Breitner"
+    "https://www.joachim-breitner.de"
+    (Just "https://www.joachim-breitner.de/blog_feed.rss")
+  , toSource
+    "Nuno Alexandre"
+    "https://nunoalexandre.com"
+    (Just "https://nunoalexandre.com/feed.xml")
+  , toSource
+    "Andre Van Der Merwe"
+    "http://www.andrevdm.com/"
+    (Just "http://www.andrevdm.com/atom.xml")
+  , toSource
+    "Tom Smalley"
+    "https://tomsmalley.github.io"
+    Nothing
+  , toSource
+    "Ibnu D. Aji"
+    "https://ibnuda.gitlab.io"
+    Nothing -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
   ]
 
 getSourceItems :: Client.Manager -> Source -> IO (Set.Set Item)
