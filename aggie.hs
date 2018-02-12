@@ -89,10 +89,8 @@ xmlContent string = Xml.NodeContent (Text.pack string)
 xmlDocument :: Xml.Element -> Xml.Document
 xmlDocument element = Xml.Document (Xml.Prologue [] Nothing []) element []
 
--- TODO: This should use `%Ez` for the time zone offset to get `+HH:MM` instead
--- of `+HHMM`, but that modifier isn't available in `time` < 1.9.
 rfc3339 :: Time.UTCTime -> String
-rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%Q%z" time
+rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
 sources :: Set.Set Source
 sources = Set.fromList
