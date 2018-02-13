@@ -76,7 +76,7 @@ startServer database = Warp.run 3000 (\ request respond -> do
             ( xmlNode "title" [] [xmlContent "Haskell Weekly"]
             : xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
             : xmlNode "updated" [] [xmlContent (rfc3339 now)]
-            : xmlNode "link" [("rel", "self"), ("href", "https://aggie.haskellweekly.news/feed.atom")] []
+            : xmlNode "link" [("rel", "self"), ("href", "http://localhost:3000/feed.atom")] []
             : entries
             )
       let document = xmlDocument feed

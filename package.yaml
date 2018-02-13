@@ -1,10 +1,10 @@
-name: aggie
+name: reveille
 version: 0.0.0
 
 category: Web
-description: Aggie aggregates Haskell Weekly feeds.
+description: Reveille aggregates Haskell Weekly feeds.
 extra-source-files: README.markdown
-github: tfausak/aggie
+github: tfausak/reveille
 license-file: LICENSE.markdown
 license: MIT
 maintainer: Taylor Fausak
@@ -32,4 +32,4 @@ executable:
     - -Wno-implicit-prelude
     - -Wno-safe
     - -Wno-unsafe
-  main: aggie.hs
+  main: Main.hs

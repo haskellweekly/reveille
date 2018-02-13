@@ -1,3 +1,3 @@
-# Aggie
+# Reveille
 
-Aggie aggregates Haskell Weekly feeds.
+Reveille aggregates Haskell Weekly feeds.
