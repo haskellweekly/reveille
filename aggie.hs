@@ -29,17 +29,17 @@ main = do
   manager <- Client.newTlsManager
   database <- Stm.newTVarIO initialDatabase
 
-  Foldable.for_ sources (\ source -> do
+  Foldable.for_ authors (\ author -> do
     Printf.printf "- %s <%s>\n"
-      (fromName (sourceName source))
-      (fromUrl (sourceUrl source))
+      (fromName (authorName author))
+      (fromUrl (authorUrl author))
 
     items <- Exception.catch
-      (getSourceItems manager source)
+      (getAuthorItems manager author)
       (\ exception -> do
         print (exception :: Exception.IOException)
         pure Set.empty)
-    Stm.atomically (Stm.modifyTVar database (updateDatabase source items))
+    Stm.atomically (Stm.modifyTVar database (updateDatabase author items))
 
     Foldable.for_ items (\ item -> do
       Printf.printf "  - %s: %s\n"
@@ -92,57 +92,57 @@ xmlDocument element = Xml.Document (Xml.Prologue [] Nothing []) element []
 rfc3339 :: Time.UTCTime -> String
 rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
-sources :: Set.Set Source
-sources = Set.fromList
-  [ toSource
+authors :: Set.Set Author
+authors = Set.fromList
+  [ toAuthor
     "Taylor Fausak"
     "http://taylor.fausak.me"
     (Just "http://taylor.fausak.me/sitemap.atom")
-  , toSource
+  , toAuthor
     "FP Complete"
     "https://www.fpcomplete.com"
     (Just "https://www.fpcomplete.com/blog/atom.xml")
-  , toSource
+  , toAuthor
     "Ben Gamari"
     "https://tomsmalley.github.io"
     Nothing
-  , toSource
+  , toAuthor
     "Gabriel Gonzalez"
     "http://www.haskellforall.com"
     (Just "http://www.haskellforall.com/feeds/posts/default")
-  , toSource
+  , toAuthor
     "Tweag I/O"
     "https://www.tweag.io"
     (Just "https://www.tweag.io/rss.xml")
-  , toSource
+  , toAuthor
     "Vaibhav Sagar"
     "http://vaibhavsagar.com"
     (Just "http://vaibhavsagar.com/atom.xml")
-  , toSource
+  , toAuthor
     "Joachim Breitner"
     "https://www.joachim-breitner.de"
     (Just "https://www.joachim-breitner.de/blog_feed.rss")
-  , toSource
+  , toAuthor
     "Nuno Alexandre"
     "https://nunoalexandre.com"
     (Just "https://nunoalexandre.com/feed.xml")
-  , toSource
+  , toAuthor
     "Andre Van Der Merwe"
     "http://www.andrevdm.com/"
     (Just "http://www.andrevdm.com/atom.xml")
-  , toSource
+  , toAuthor
     "Tom Smalley"
     "https://tomsmalley.github.io"
     Nothing
-  , toSource
+  , toAuthor
     "Ibnu D. Aji"
     "https://ibnuda.gitlab.io"
     Nothing -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
   ]
 
-getSourceItems :: Client.Manager -> Source -> IO (Set.Set Item)
-getSourceItems manager source = do
-  url <- case sourceFeed source of
+getAuthorItems :: Client.Manager -> Author -> IO (Set.Set Item)
+getAuthorItems manager author = do
+  url <- case authorFeed author of
     Nothing -> fail "no feed"
     Just url -> pure url
 
@@ -159,17 +159,17 @@ getSourceItems manager source = do
 
   pure (Set.fromList items)
 
-data Source = Source
-  { sourceName :: Name
-  , sourceUrl :: Url
-  , sourceFeed :: Maybe Url
+data Author = Author
+  { authorName :: Name
+  , authorUrl :: Url
+  , authorFeed :: Maybe Url
   } deriving (Eq, Ord, Show)
 
-toSource :: String -> String -> Maybe String -> Source
-toSource name url feed = Source
-  { sourceName = toName name
-  , sourceUrl = toUrl url
-  , sourceFeed = fmap toUrl feed
+toAuthor :: String -> String -> Maybe String -> Author
+toAuthor name url feed = Author
+  { authorName = toName name
+  , authorUrl = toUrl url
+  , authorFeed = fmap toUrl feed
   }
 
 data Item = Item
@@ -189,8 +189,8 @@ toItem feedItem = do
     , itemTime = time
     }
 
-itemToEntry :: (Source, Item) -> Xml.Node
-itemToEntry (source, item) =
+itemToEntry :: (Author, Item) -> Xml.Node
+itemToEntry (author, item) =
   let url = fromUrl (itemUrl item)
   in xmlNode "entry" []
     [ xmlNode "title" [] [Xml.NodeContent (unwrapName (itemName item))]
@@ -198,8 +198,8 @@ itemToEntry (source, item) =
     , xmlNode "updated" [] [xmlContent (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))]
     , xmlNode "link" [("href", url)] []
     , xmlNode "author" []
-      [ xmlNode "name" [] [Xml.NodeContent (unwrapName (sourceName source))]
-      , xmlNode "uri" [] [Xml.NodeContent (unwrapUrl (sourceUrl source))]
+      [ xmlNode "name" [] [Xml.NodeContent (unwrapName (authorName author))]
+      , xmlNode "uri" [] [Xml.NodeContent (unwrapUrl (authorUrl author))]
       ]
     ]
 
@@ -227,18 +227,18 @@ fromUrl :: Url -> String
 fromUrl url = Text.unpack (unwrapUrl url)
 
 newtype Database = Database
-  { unwrapDatabase :: Map.Map Source (Set.Set Item)
+  { unwrapDatabase :: Map.Map Author (Set.Set Item)
   } deriving (Eq, Ord, Show)
 
 initialDatabase :: Database
 initialDatabase = Database Map.empty
 
-updateDatabase :: Source -> Set.Set Item -> Database -> Database
-updateDatabase source items database = Database (Map.insertWith Set.union source items (unwrapDatabase database))
+updateDatabase :: Author -> Set.Set Item -> Database -> Database
+updateDatabase author items database = Database (Map.insertWith Set.union author items (unwrapDatabase database))
 
-getAllDatabaseItems :: Database -> [(Source, Item)]
+getAllDatabaseItems :: Database -> [(Author, Item)]
 getAllDatabaseItems database = List.sortBy
   (Ord.comparing (\ (_, item) -> Ord.Down (itemTime item)))
   (concatMap
-    (\ (source, items) -> map (\ item -> (source, item)) (Set.toList items))
+    (\ (author, items) -> map (\ item -> (author, item)) (Set.toList items))
     (Map.toList (unwrapDatabase database)))
