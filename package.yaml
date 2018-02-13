@@ -12,6 +12,7 @@ synopsis: Aggregates Haskell Weekly feeds.
 
 executable:
   dependencies:
+    async: '>= 2.1.1 && < 2.2'
     base: '>= 4.10.1 && < 4.11'
     containers: '>= 0.5.10 && < 0.6'
     feed: '>= 1.0.0 && < 1.1'

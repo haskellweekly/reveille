@@ -2,6 +2,7 @@ module Main
   ( main
   ) where
 
+import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.STM as Stm
 import qualified Control.Exception as Exception
 import qualified Data.Foldable as Foldable
@@ -29,9 +30,9 @@ main = do
   manager <- Client.newTlsManager
   database <- Stm.newTVarIO initialDatabase
 
-  startUpdater manager database
-
-  startServer database
+  Async.concurrently_
+    (startUpdater manager database)
+    (startServer database)
 
 startUpdater manager database = Foldable.for_ authors (\ author -> do
   Printf.printf "- %s <%s>\n"
