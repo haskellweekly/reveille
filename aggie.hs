@@ -29,47 +29,52 @@ main = do
   manager <- Client.newTlsManager
   database <- Stm.newTVarIO initialDatabase
 
-  Foldable.for_ authors (\ author -> do
-    Printf.printf "- %s <%s>\n"
-      (fromName (authorName author))
-      (fromUrl (authorUrl author))
+  startUpdater manager database
 
-    items <- Exception.catch
-      (getAuthorItems manager author)
-      (\ exception -> do
-        print (exception :: Exception.IOException)
-        pure Set.empty)
-    Stm.atomically (Stm.modifyTVar database (updateDatabase author items))
+  startServer database
 
-    Foldable.for_ items (\ item -> do
-      Printf.printf "  - %s: %s\n"
-        (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))
-        (fromName (itemName item))))
+startUpdater manager database = Foldable.for_ authors (\ author -> do
+  Printf.printf "- %s <%s>\n"
+    (fromName (authorName author))
+    (fromUrl (authorUrl author))
 
-  Warp.run 3000 (\ request respond -> do
-    let method = Text.unpack (Text.decodeUtf8 (Wai.requestMethod request))
-    let path = map Text.unpack (Wai.pathInfo request)
-    case (method, path) of
-      ("GET", ["feed.atom"]) -> do
-        db <- Stm.readTVarIO database
-        let items = getAllDatabaseItems db
-        let entries = map itemToEntry items
-        now <- Time.getCurrentTime
-        let feed = xmlElement
-              "feed"
-              [("xmlns", "http://www.w3.org/2005/Atom")]
-              ( xmlNode "title" [] [xmlContent "Haskell Weekly"]
-              : xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
-              : xmlNode "updated" [] [xmlContent (rfc3339 now)]
-              : xmlNode "link" [("rel", "self"), ("href", "https://aggie.haskellweekly.news/feed.atom")] []
-              : entries
-              )
-        let document = xmlDocument feed
-        respond (Wai.responseLBS
-          Http.ok200
-          [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
-          (Xml.renderLBS Xml.def document))
-      _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
+  items <- Exception.catch
+    (getAuthorItems manager author)
+    (\ exception -> do
+      print (exception :: Exception.IOException)
+      pure Set.empty)
+  Stm.atomically (Stm.modifyTVar database (updateDatabase author items))
+
+  Foldable.for_ items (\ item -> do
+    Printf.printf "  - %s: %s\n"
+      (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))
+      (fromName (itemName item))))
+
+startServer :: Stm.TVar Database -> IO ()
+startServer database = Warp.run 3000 (\ request respond -> do
+  let method = Text.unpack (Text.decodeUtf8 (Wai.requestMethod request))
+  let path = map Text.unpack (Wai.pathInfo request)
+  case (method, path) of
+    ("GET", ["feed.atom"]) -> do
+      db <- Stm.readTVarIO database
+      let items = getAllDatabaseItems db
+      let entries = map itemToEntry items
+      now <- Time.getCurrentTime
+      let feed = xmlElement
+            "feed"
+            [("xmlns", "http://www.w3.org/2005/Atom")]
+            ( xmlNode "title" [] [xmlContent "Haskell Weekly"]
+            : xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
+            : xmlNode "updated" [] [xmlContent (rfc3339 now)]
+            : xmlNode "link" [("rel", "self"), ("href", "https://aggie.haskellweekly.news/feed.atom")] []
+            : entries
+            )
+      let document = xmlDocument feed
+      respond (Wai.responseLBS
+        Http.ok200
+        [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
+        (Xml.renderLBS Xml.def document))
+    _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 xmlName :: String -> Xml.Name
 xmlName string = Xml.Name (Text.pack string) Nothing Nothing
