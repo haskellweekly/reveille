@@ -87,6 +87,13 @@ startServer database = Warp.run 3000 (\ request respond -> do
         (Xml.renderLBS Xml.def document))
     ("GET", ["health-check"]) -> respond
       (Wai.responseLBS Http.ok200 [] LazyBytes.empty)
+    ("GET", ["robots.txt"]) -> respond (Wai.responseLBS
+      Http.ok200
+      []
+      (LazyBytes.fromStrict (Text.encodeUtf8 (Text.pack (unlines
+        [ "User-Agent: *"
+        , "Disallow:"
+        ])))))
     _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 xmlName :: String -> Xml.Name
