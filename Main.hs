@@ -58,7 +58,7 @@ startUpdater manager database = Monad.forever (do
         (rfc3339 (itemTime item))
         (fromName (itemName item))))
 
-  sleep 60)
+  sleep 3600)
 
 sleep :: Int -> IO ()
 sleep seconds = Concurrent.threadDelay (seconds * 1000000)
