@@ -235,6 +235,34 @@ authors = Set.fromList
     "Ibnu D. Aji"
     "https://ibnuda.gitlab.io"
     Nothing -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
+  , toAuthor
+    "Attila Domokos"
+    "http://www.adomokos.com"
+    (Just "http://www.adomokos.com/feeds/posts/default")
+  , toAuthor
+    "Matt Noonan"
+    "http://storm-country.com"
+    (Just "http://storm-country.com/rss")
+  , toAuthor
+    "Stackage"
+    "https://www.stackage.org"
+    (Just "https://www.stackage.org/blog/feed")
+  , toAuthor
+    "Siddharth Bhat"
+    "https://pixel-druid.com"
+    Nothing -- https://github.com/bollu/pixeldruid/issues/1
+  , toAuthor
+    "Alex Beal"
+    "http://www.usrsb.in"
+    (Just "http://www.usrsb.in/rss.xml")
+  , toAuthor
+    "Sandy Maguire"
+    "http://reasonablypolymorphic.com"
+    (Just "http://reasonablypolymorphic.com/atom.xml")
+  , toAuthor
+    "Monday Morning Haskell"
+    "https://mmhaskell.com"
+    (Just "https://mmhaskell.com/blog?format=rss")
   ]
 
 getAuthorItems :: Client.Manager -> Author -> IO (Set.Set Item)
