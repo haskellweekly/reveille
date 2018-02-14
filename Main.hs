@@ -124,6 +124,21 @@ startServer database = Warp.run 3000 (\ request respond -> do
         , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         ]))
+    ("GET", []) -> respond (Wai.responseLBS
+      Http.ok200
+      [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
+      (LazyBytes.fromStrict (Text.encodeUtf8 (Text.pack (unlines
+        [ "<!doctype html>"
+        , "<html>"
+        , "  <head>"
+        , "    <meta charset=\"utf-8\">"
+        , "    <title>Haskell Weekly</title>"
+        , "  </head>"
+        , "  <body>"
+        , "    <h1>Haskell Weekly</h1>"
+        , "  </body>"
+        , "</html>"
+        ])))))
     _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 xmlName :: String -> Xml.Name
