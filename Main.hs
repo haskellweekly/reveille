@@ -11,7 +11,6 @@ import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
 import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
@@ -53,7 +52,7 @@ startUpdater manager database = Monad.forever (do
 
     Foldable.for_ items (\ item -> do
       Printf.printf "  - %s: %s\n"
-        (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))
+        (rfc3339 (itemTime item))
         (fromName (itemName item))))
 
   sleep 60)
@@ -245,14 +244,15 @@ toAuthor name url feed = Author
 data Item = Item
   { itemName :: Name
   , itemUrl :: Url
-  , itemTime :: Maybe Time.UTCTime
+  , itemTime :: Time.UTCTime
   } deriving (Eq, Ord, Show)
 
 toItem :: Feed.Item -> Maybe Item
 toItem feedItem = do
   name <- Feed.getItemTitle feedItem
   url <- Feed.getItemLink feedItem
-  time <- Feed.getItemPublishDate feedItem
+  maybeTime <- Feed.getItemPublishDate feedItem
+  time <- maybeTime
   pure Item
     { itemName = Name name
     , itemUrl = Url url
@@ -265,16 +265,13 @@ itemToEntry (author, item) =
   in xmlNode "entry" []
     [ xmlNode "title" [] [Xml.NodeContent (unwrapName (itemName item))]
     , xmlNode "id" [] [xmlContent url]
-    , xmlNode "updated" [] [xmlContent (rfc3339 (Maybe.fromMaybe unixEpoch (itemTime item)))]
+    , xmlNode "updated" [] [xmlContent (rfc3339 (itemTime item))]
     , xmlNode "link" [("href", url)] []
     , xmlNode "author" []
       [ xmlNode "name" [] [Xml.NodeContent (unwrapName (authorName author))]
       , xmlNode "uri" [] [Xml.NodeContent (unwrapUrl (authorUrl author))]
       ]
     ]
-
-unixEpoch :: Time.UTCTime
-unixEpoch = Time.UTCTime (Time.fromGregorian 1970 1 1) 0
 
 newtype Name = Name
   { unwrapName :: Text.Text
