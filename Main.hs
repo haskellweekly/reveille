@@ -132,9 +132,13 @@ startServer database = Warp.run 3000 (\ request respond -> do
         , "  <head>"
         , "    <meta charset=\"utf-8\">"
         , "    <title>Haskell Weekly</title>"
+        , "    <link rel=\"alternate\" type=\"application/atom+xml\" href=\"feed.atom\">"
         , "  </head>"
         , "  <body>"
         , "    <h1>Haskell Weekly</h1>"
+        , "    <p>"
+        , "      Subscribe to the <a href=\"feed.atom\">feed</a>."
+        , "    </p>"
         , "  </body>"
         , "</html>"
         ])))))
