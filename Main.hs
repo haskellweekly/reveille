@@ -126,25 +126,46 @@ startServer database = Warp.run 3000 (\ request respond -> do
         , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         ]))
-    ("GET", []) -> respond (Wai.responseLBS
-      Http.ok200
-      [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
-      (LazyBytes.fromStrict (Text.encodeUtf8 (Text.pack (unlines
-        [ "<!doctype html>"
-        , "<html>"
-        , "  <head>"
-        , "    <meta charset=\"utf-8\">"
-        , "    <title>Haskell Weekly</title>"
-        , "    <link rel=\"alternate\" type=\"application/atom+xml\" href=\"feed.atom\">"
-        , "  </head>"
-        , "  <body>"
-        , "    <h1>Haskell Weekly</h1>"
-        , "    <p>"
-        , "      Subscribe to the <a href=\"feed.atom\">feed</a>."
-        , "    </p>"
-        , "  </body>"
-        , "</html>"
-        ])))))
+    ("GET", []) -> do
+      db <- Stm.readTVarIO database
+      now <- Time.getCurrentTime
+      let items = getRecentDatabaseItems db now
+      respond (Wai.responseLBS
+        Http.ok200
+        [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
+        (LazyBytes.fromStrict (Text.encodeUtf8 (Text.pack (unlines
+          [ "<!doctype html>"
+          , "<html>"
+          , "  <head>"
+          , "    <meta charset=\"utf-8\">"
+          , "    <title>Haskell Weekly</title>"
+          , "    <link rel=\"alternate\" type=\"application/atom+xml\" href=\"feed.atom\">"
+          , "  </head>"
+          , "  <body>"
+          , "    <h1>Haskell Weekly</h1>"
+          , "    <p>"
+          , "      Subscribe to the <a href=\"feed.atom\">feed</a>."
+          , "    </p>"
+          , "    <ol>"
+          , List.intercalate "\n" (map
+            (\ (author, item) -> concat
+              [ "      <li>\n"
+              , "        <a href=\""
+              , fromUrl (itemUrl item)
+              , "\">"
+              , fromName (itemName item)
+              , "</a> by "
+              , fromName (authorName author)
+              , " on "
+              , Time.formatTime Time.defaultTimeLocale "%B %-e" (itemTime item)
+              , "\n"
+              , "      </li>"
+              ])
+            items)
+          , "    </ol>"
+          , "  </body>"
+          , "</html>"
+          ])))))
     _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 xmlName :: String -> Xml.Name
