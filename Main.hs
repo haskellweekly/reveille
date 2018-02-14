@@ -7,6 +7,7 @@ import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.STM as Stm
 import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
+import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -84,6 +85,8 @@ startServer database = Warp.run 3000 (\ request respond -> do
         Http.ok200
         [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
         (Xml.renderLBS Xml.def document))
+    ("GET", ["health-check"]) -> respond
+      (Wai.responseLBS Http.ok200 [] LazyBytes.empty)
     _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 xmlName :: String -> Xml.Name
