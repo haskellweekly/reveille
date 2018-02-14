@@ -19,11 +19,13 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
+import qualified Data.Version as Version
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.TLS as Client
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
+import qualified Paths_reveille as This
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
@@ -271,7 +273,15 @@ getAuthorItems manager author = do
     Nothing -> fail "no feed"
     Just url -> pure url
 
-  request <- Client.parseUrlThrow (fromUrl url)
+  initialRequest <- Client.parseUrlThrow (fromUrl url)
+  let
+    version = Version.showVersion This.version
+    userAgent = "reveille/" ++ version
+    request = initialRequest
+      { Client.requestHeaders =
+        [ (Http.hUserAgent, Text.encodeUtf8 (Text.pack userAgent))
+        ]
+      }
   response <- Client.httpLbs request manager
 
   feed <- case Feed.parseFeedSource (Client.responseBody response) of
