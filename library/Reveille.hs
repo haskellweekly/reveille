@@ -1,5 +1,5 @@
-module Main
-  ( main
+module Reveille
+  ( defaultMain
   ) where
 
 import Data.Function ((&))
@@ -32,8 +32,8 @@ import qualified Text.Feed.Types as Feed
 import qualified Text.Printf as Printf
 import qualified Text.XML as Xml
 
-main :: IO ()
-main = do
+defaultMain :: IO ()
+defaultMain = do
   manager <- Client.newTlsManager
   database <- Stm.newTVarIO initialDatabase
 
