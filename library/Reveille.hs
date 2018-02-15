@@ -3,6 +3,7 @@ module Reveille
   ) where
 
 import Data.Function ((&))
+import Reveille.Author (Author(authorName, authorUrl, authorFeed), toAuthor)
 import Reveille.Name (Name, toName, fromName)
 import Reveille.Url (Url, toUrl, fromUrl)
 
@@ -348,27 +349,6 @@ getAuthorItems manager author = do
     Right items -> pure items
 
   pure (Set.fromList items)
-
-data Author = Author
-  { authorName :: Name
-  , authorUrl :: Url
-  , authorFeed :: Maybe Url
-  } deriving (Eq, Ord, Show)
-
-toAuthor :: String -> String -> Maybe String -> Either String Author
-toAuthor rawName rawUrl rawMaybeFeed = do
-  name <- toName rawName
-  url <- toUrl rawUrl
-  maybeFeed <- case rawMaybeFeed of
-    Nothing -> pure Nothing
-    Just rawFeedUrl -> do
-      feed <- toUrl rawFeedUrl
-      pure (Just feed)
-  pure Author
-    { authorName = name
-    , authorUrl = url
-    , authorFeed = maybeFeed
-    }
 
 data Item = Item
   { itemName :: Name
