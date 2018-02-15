@@ -11,6 +11,7 @@ import qualified Control.Concurrent.STM as Stm
 import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
 import qualified Data.ByteString.Lazy as LazyBytes
+import qualified Data.Either as Either
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -197,7 +198,7 @@ rfc3339 :: Time.UTCTime -> String
 rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
 authors :: Set.Set Author
-authors = Set.fromList (Maybe.catMaybes
+authors = Set.fromList (Either.rights
   [ toAuthor
     "Alex Beal"
     "http://www.usrsb.in"
@@ -342,8 +343,8 @@ getAuthorItems manager author = do
     Just feed -> pure feed
 
   items <- case mapM toItem (Feed.feedItems feed) of
-    Nothing -> fail "invalid item"
-    Just items -> pure items
+    Left _ -> fail "invalid item"
+    Right items -> pure items
 
   pure (Set.fromList items)
 
@@ -353,9 +354,9 @@ data Author = Author
   , authorFeed :: Maybe Url
   } deriving (Eq, Ord, Show)
 
-toAuthor :: String -> String -> Maybe String -> Maybe Author
+toAuthor :: String -> String -> Maybe String -> Either String Author
 toAuthor rawName url feed = do
-  name <- rightToMaybe (toName rawName)
+  name <- toName rawName
   pure Author
     { authorName = name
     , authorUrl = toUrl url
@@ -368,23 +369,23 @@ data Item = Item
   , itemTime :: Time.UTCTime
   } deriving (Eq, Ord, Show)
 
-toItem :: Feed.Item -> Maybe Item
+toItem :: Feed.Item -> Either String Item
 toItem feedItem = do
-  rawName <- Feed.getItemTitle feedItem
-  name <- rightToMaybe (toName (Text.unpack rawName))
-  url <- Feed.getItemLink feedItem
-  maybeTime <- Feed.getItemPublishDate feedItem
-  time <- maybeTime
+  rawName <- maybeToEither "missing item name" (Feed.getItemTitle feedItem)
+  name <- toName (Text.unpack rawName)
+  url <- maybeToEither "missing item url" (Feed.getItemLink feedItem)
+  maybeTime <- maybeToEither "missing item time" (Feed.getItemPublishDate feedItem)
+  time <- maybeToEither "invalid item time" maybeTime
   pure Item
     { itemName = name
     , itemUrl = Url url
     , itemTime = time
     }
 
-rightToMaybe :: Either l r -> Maybe r
-rightToMaybe e = case e of
-  Left _ -> Nothing
-  Right r -> Just r
+maybeToEither :: l -> Maybe r -> Either l r
+maybeToEither l m = case m of
+  Nothing -> Left l
+  Just r -> Right r
 
 itemToEntry :: (Author, Item) -> Xml.Node
 itemToEntry (author, item) =
