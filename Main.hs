@@ -48,11 +48,15 @@ startUpdater manager database = Monad.forever (do
       (fromName (authorName author))
       (fromUrl (authorUrl author))
 
-    items <- Exception.catch
+    items <- Exception.catches
       (getAuthorItems manager author)
-      (\ exception -> do
+      [ Exception.Handler (\ exception -> do
         print (exception :: Exception.IOException)
         pure Set.empty)
+      , Exception.Handler (\ exception -> do
+        print (exception :: Client.HttpException)
+        pure Set.empty)
+      ]
     Stm.atomically (Stm.modifyTVar database (updateDatabase author items))
 
     Foldable.for_ items (\ item -> do
