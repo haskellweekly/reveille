@@ -3,6 +3,7 @@ module Reveille
   ) where
 
 import Data.Function ((&))
+import Reveille.Name (Name, toName, fromName)
 
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Concurrent.Async as Async
@@ -372,7 +373,7 @@ toItem feedItem = do
   maybeTime <- Feed.getItemPublishDate feedItem
   time <- maybeTime
   pure Item
-    { itemName = Name name
+    { itemName = toName (Text.unpack name)
     , itemUrl = Url url
     , itemTime = time
     }
@@ -381,25 +382,15 @@ itemToEntry :: (Author, Item) -> Xml.Node
 itemToEntry (author, item) =
   let url = fromUrl (itemUrl item)
   in xmlNode "entry" []
-    [ xmlNode "title" [] [Xml.NodeContent (unwrapName (itemName item))]
+    [ xmlNode "title" [] [xmlContent (fromName (itemName item))]
     , xmlNode "id" [] [xmlContent url]
     , xmlNode "updated" [] [xmlContent (rfc3339 (itemTime item))]
     , xmlNode "link" [("href", url)] []
     , xmlNode "author" []
-      [ xmlNode "name" [] [Xml.NodeContent (unwrapName (authorName author))]
+      [ xmlNode "name" [] [xmlContent (fromName (authorName author))]
       , xmlNode "uri" [] [Xml.NodeContent (unwrapUrl (authorUrl author))]
       ]
     ]
-
-newtype Name = Name
-  { unwrapName :: Text.Text
-  } deriving (Eq, Ord, Show)
-
-toName :: String -> Name
-toName string = Name (Text.pack string)
-
-fromName :: Name -> String
-fromName name = Text.unpack (unwrapName name)
 
 newtype Url = Url
   { unwrapUrl :: Text.Text
