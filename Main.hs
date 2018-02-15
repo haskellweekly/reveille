@@ -198,6 +198,10 @@ rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" tim
 authors :: Set.Set Author
 authors = Set.fromList
   [ toAuthor
+    "Haskell Weekly"
+    "https://haskellweekly.news"
+    (Just "https://haskellweekly.news/haskell-weekly.atom")
+  , toAuthor
     "Taylor Fausak"
     "http://taylor.fausak.me"
     (Just "http://taylor.fausak.me/sitemap.atom")
@@ -269,6 +273,50 @@ authors = Set.fromList
     "Monday Morning Haskell"
     "https://mmhaskell.com"
     (Just "https://mmhaskell.com/blog?format=rss")
+  , toAuthor
+    "Mistral Contrastin"
+    "https://dodisturb.me"
+    Nothing -- https://github.com/madgen/madgen.github.io/issues/1
+  , toAuthor
+    "Oskar Wickstr\xf6m"
+    "https://wickstrom.tech"
+    (Just "https://wickstrom.tech/feed.xml")
+  , toAuthor
+    "Haskell at Work"
+    "https://haskell-at-work.com"
+    (Just "https://www.youtube.com/feeds/videos.xml?channel_id=UCUgxpaK7ySR-z6AXA5-uDuw")
+  , toAuthor
+    "Concert"
+    "https://medium.com/@concertdaw"
+    (Just "https://medium.com/feed/@concertdaw")
+  , toAuthor
+    "Michael Snoyman"
+    "https://www.snoyman.com"
+    (Just "https://www.snoyman.com/feed")
+  , toAuthor
+    "Daniel Bolivar"
+    "https://www.dabolivar.com"
+    (Just "https://www.dabolivar.com/index.xml")
+  , toAuthor
+    "Mark Karpov"
+    "https://markkarpov.com"
+    (Just "https://markkarpov.com/feed.atom")
+  , toAuthor
+    "Google Summer of Code"
+    "https://summerofcode.withgoogle.com"
+    (Just "http://feeds.feedburner.com/GoogleOpenSourceBlog")
+  , toAuthor
+    "Ryan Scott"
+    "https://ryanglscott.github.io"
+    (Just "https://ryanglscott.github.io/feed.xml")
+  , toAuthor
+    "Alexis King"
+    "https://lexi-lambda.github.io"
+    (Just "https://lexi-lambda.github.io/feeds/all.atom.xml")
+  , toAuthor
+    "Humble Bundle"
+    "https://www.humblebundle.com"
+    (Just "http://blog.humblebundle.com/rss")
   ]
 
 getAuthorItems :: Client.Manager -> Author -> IO (Set.Set Item)
