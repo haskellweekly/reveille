@@ -197,7 +197,7 @@ rfc3339 :: Time.UTCTime -> String
 rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
 authors :: Set.Set Author
-authors = Set.fromList
+authors = Set.fromList (Maybe.catMaybes
   [ toAuthor
     "Alex Beal"
     "http://www.usrsb.in"
@@ -318,7 +318,7 @@ authors = Set.fromList
     "Vaibhav Sagar"
     "http://vaibhavsagar.com"
     (Just "http://vaibhavsagar.com/atom.xml")
-  ]
+  ])
 
 getAuthorItems :: Client.Manager -> Author -> IO (Set.Set Item)
 getAuthorItems manager author = do
@@ -353,12 +353,14 @@ data Author = Author
   , authorFeed :: Maybe Url
   } deriving (Eq, Ord, Show)
 
-toAuthor :: String -> String -> Maybe String -> Author
-toAuthor name url feed = Author
-  { authorName = toName name
-  , authorUrl = toUrl url
-  , authorFeed = fmap toUrl feed
-  }
+toAuthor :: String -> String -> Maybe String -> Maybe Author
+toAuthor rawName url feed = do
+  name <- rightToMaybe (toName rawName)
+  pure Author
+    { authorName = name
+    , authorUrl = toUrl url
+    , authorFeed = fmap toUrl feed
+    }
 
 data Item = Item
   { itemName :: Name
@@ -368,15 +370,21 @@ data Item = Item
 
 toItem :: Feed.Item -> Maybe Item
 toItem feedItem = do
-  name <- Feed.getItemTitle feedItem
+  rawName <- Feed.getItemTitle feedItem
+  name <- rightToMaybe (toName (Text.unpack rawName))
   url <- Feed.getItemLink feedItem
   maybeTime <- Feed.getItemPublishDate feedItem
   time <- maybeTime
   pure Item
-    { itemName = toName (Text.unpack name)
+    { itemName = name
     , itemUrl = Url url
     , itemTime = time
     }
+
+rightToMaybe :: Either l r -> Maybe r
+rightToMaybe e = case e of
+  Left _ -> Nothing
+  Right r -> Just r
 
 itemToEntry :: (Author, Item) -> Xml.Node
 itemToEntry (author, item) =
