@@ -4,8 +4,9 @@ module Reveille
 
 import Data.Function ((&))
 import Reveille.Author (Author(authorName, authorUrl, authorFeed), toAuthor)
-import Reveille.Name (Name, toName, fromName)
-import Reveille.Url (Url, toUrl, fromUrl)
+import Reveille.Item (Item(itemName, itemUrl, itemTime), toItem)
+import Reveille.Name (fromName)
+import Reveille.Url (fromUrl)
 
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Concurrent.Async as Async
@@ -32,7 +33,6 @@ import qualified Network.Wai.Handler.Warp as Warp
 import qualified Paths_reveille as This
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
-import qualified Text.Feed.Types as Feed
 import qualified Text.Printf as Printf
 import qualified Text.XML as Xml
 
@@ -349,31 +349,6 @@ getAuthorItems manager author = do
     Right items -> pure items
 
   pure (Set.fromList items)
-
-data Item = Item
-  { itemName :: Name
-  , itemUrl :: Url
-  , itemTime :: Time.UTCTime
-  } deriving (Eq, Ord, Show)
-
-toItem :: Feed.Item -> Either String Item
-toItem feedItem = do
-  rawName <- maybeToEither "missing item name" (Feed.getItemTitle feedItem)
-  name <- toName (Text.unpack rawName)
-  rawUrl <- maybeToEither "missing item url" (Feed.getItemLink feedItem)
-  url <- toUrl (Text.unpack rawUrl)
-  maybeTime <- maybeToEither "missing item time" (Feed.getItemPublishDate feedItem)
-  time <- maybeToEither "invalid item time" maybeTime
-  pure Item
-    { itemName = name
-    , itemUrl = url
-    , itemTime = time
-    }
-
-maybeToEither :: l -> Maybe r -> Either l r
-maybeToEither l m = case m of
-  Nothing -> Left l
-  Just r -> Right r
 
 itemToEntry :: (Author, Item) -> Xml.Node
 itemToEntry (author, item) =
