@@ -356,12 +356,18 @@ data Author = Author
   } deriving (Eq, Ord, Show)
 
 toAuthor :: String -> String -> Maybe String -> Either String Author
-toAuthor rawName url feed = do
+toAuthor rawName rawUrl rawMaybeFeed = do
   name <- toName rawName
+  url <- toUrl rawUrl
+  maybeFeed <- case rawMaybeFeed of
+    Nothing -> pure Nothing
+    Just rawFeedUrl -> do
+      feed <- toUrl rawFeedUrl
+      pure (Just feed)
   pure Author
     { authorName = name
-    , authorUrl = toUrl url
-    , authorFeed = fmap toUrl feed
+    , authorUrl = url
+    , authorFeed = maybeFeed
     }
 
 data Item = Item
@@ -374,12 +380,13 @@ toItem :: Feed.Item -> Either String Item
 toItem feedItem = do
   rawName <- maybeToEither "missing item name" (Feed.getItemTitle feedItem)
   name <- toName (Text.unpack rawName)
-  url <- maybeToEither "missing item url" (Feed.getItemLink feedItem)
+  rawUrl <- maybeToEither "missing item url" (Feed.getItemLink feedItem)
+  url <- toUrl (Text.unpack rawUrl)
   maybeTime <- maybeToEither "missing item time" (Feed.getItemPublishDate feedItem)
   time <- maybeToEither "invalid item time" maybeTime
   pure Item
     { itemName = name
-    , itemUrl = toUrl (Text.unpack url)
+    , itemUrl = url
     , itemTime = time
     }
 
