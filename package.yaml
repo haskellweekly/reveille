@@ -36,6 +36,8 @@ ghc-options:
   - -Wno-implicit-prelude
   - -Wno-safe
   - -Wno-unsafe
+  # https://github.com/haskell/cabal/issues/4739
+  - -optP -Wno-nonportable-include-path
 
 library:
   source-dirs: library
