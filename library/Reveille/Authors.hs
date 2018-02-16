@@ -84,7 +84,7 @@ authors = Set.fromList (Either.rights
   , toAuthor
     "Mistral Contrastin"
     "https://dodisturb.me"
-    Nothing -- https://github.com/madgen/madgen.github.io/issues/1
+    (Just "https://dodisturb.me/atom.xml")
   , toAuthor
     "Monday Morning Haskell"
     "https://mmhaskell.com"
