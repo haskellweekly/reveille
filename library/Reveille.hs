@@ -2,8 +2,8 @@ module Reveille
   ( defaultMain
   ) where
 
-import Data.Function ((&))
 import Reveille.Author (Author(authorName, authorUrl, authorFeed), toAuthor)
+import Reveille.Database (Database, initialDatabase, updateDatabase, getRecentDatabaseItems)
 import Reveille.Item (Item(itemName, itemUrl, itemTime), toItem)
 import Reveille.Name (fromName)
 import Reveille.Url (fromUrl)
@@ -18,8 +18,6 @@ import qualified Data.Either as Either
 import qualified Data.Foldable as Foldable
 import qualified Data.List as List
 import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
-import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -363,30 +361,3 @@ itemToEntry (author, item) =
       , xmlNode "uri" [] [xmlContent (fromUrl (authorUrl author))]
       ]
     ]
-
-newtype Database = Database
-  { unwrapDatabase :: Map.Map Author (Set.Set Item)
-  } deriving (Eq, Ord, Show)
-
-initialDatabase :: Database
-initialDatabase = Database Map.empty
-
-updateDatabase :: Author -> Set.Set Item -> Database -> Database
-updateDatabase author items database = Database (Map.insertWith Set.union author items (unwrapDatabase database))
-
-getRecentDatabaseItems :: Database -> Time.UTCTime -> [(Author, Item)]
-getRecentDatabaseItems database now =
-  let twoWeeksAgo = Time.addUTCTime (-14 * Time.nominalDay) now
-  in database
-    & unwrapDatabase
-    & Map.toList
-    & concatMap (\ (author, items) -> items
-      & Set.toList
-      & Maybe.mapMaybe (\ item ->
-        if itemTime item > now then
-          Nothing
-        else if itemTime item < twoWeeksAgo then
-          Nothing
-        else
-          Just (author, item)))
-    & List.sortBy (Ord.comparing (\ (_, item) -> Ord.Down (itemTime item)))
