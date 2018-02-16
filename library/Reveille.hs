@@ -16,7 +16,6 @@ import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Foldable as Foldable
-import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
@@ -138,42 +137,43 @@ startServer database = Warp.run 3000 (\ request respond -> do
       db <- Stm.readTVarIO database
       now <- Time.getCurrentTime
       let items = getRecentDatabaseItems db now
+      let
+        settings = Xml.def { Xml.rsXMLDeclaration = False }
+        doctype = Xml.Doctype (Text.pack "html") Nothing
+        prologue = Xml.Prologue [] (Just doctype) []
+        htmlHead = xmlNode "head" []
+          [ xmlNode "meta" [("charset", "utf-8")] []
+          , xmlNode "title" [] [xmlContent "Haskell Weekly"]
+          , xmlNode "link"
+            [ ("rel", "alternate")
+            , ("type", "application/atom+xml")
+            , ("href", "feed.atom")
+            ] []
+          ]
+        htmlBody = xmlNode "body" []
+          [ xmlNode "h1" [] [xmlContent "Haskell Weekly"]
+          , xmlNode "p" []
+            [ xmlContent "Subscribe to "
+            , xmlNode "a" [("href", "feed.atom")] [xmlContent "the Atom feed"]
+            , xmlContent "."
+            ]
+          , xmlNode "ol" [] (map
+            (\ (author, item) -> xmlNode "li" []
+              [ xmlNode "a" [("href", fromUrl (itemUrl item))] [xmlContent (fromName (itemName item))]
+              , xmlContent " by "
+              , xmlContent (fromName (authorName author))
+              , xmlContent " on "
+              , xmlContent (Time.formatTime Time.defaultTimeLocale "%B %-e" (itemTime item))
+              ])
+            items)
+          ]
+        html = xmlElement "html" [] [htmlHead, htmlBody]
+        document = Xml.Document prologue html []
+        body = Xml.renderLBS settings document
       respond (Wai.responseLBS
         Http.ok200
         [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
-        (LazyBytes.fromStrict (Text.encodeUtf8 (Text.pack (unlines
-          [ "<!doctype html>"
-          , "<html>"
-          , "  <head>"
-          , "    <meta charset=\"utf-8\">"
-          , "    <title>Haskell Weekly</title>"
-          , "    <link rel=\"alternate\" type=\"application/atom+xml\" href=\"feed.atom\">"
-          , "  </head>"
-          , "  <body>"
-          , "    <h1>Haskell Weekly</h1>"
-          , "    <p>"
-          , "      Subscribe to the <a href=\"feed.atom\">feed</a>."
-          , "    </p>"
-          , "    <ol>"
-          , List.intercalate "\n" (map
-            (\ (author, item) -> concat
-              [ "      <li>\n"
-              , "        <a href=\""
-              , fromUrl (itemUrl item)
-              , "\">"
-              , fromName (itemName item)
-              , "</a> by "
-              , fromName (authorName author)
-              , " on "
-              , Time.formatTime Time.defaultTimeLocale "%B %-e" (itemTime item)
-              , "\n"
-              , "      </li>"
-              ])
-            items)
-          , "    </ol>"
-          , "  </body>"
-          , "</html>"
-          ])))))
+        body)
     _ -> respond (Wai.responseLBS Http.notFound404 [] mempty))
 
 xmlName :: String -> Xml.Name
