@@ -3,7 +3,9 @@ version: 0.0.0
 
 category: Web
 description: Reveille aggregates Haskell Weekly feeds.
-extra-source-files: README.markdown
+extra-source-files:
+  - CHANGELOG.markdown
+  - README.markdown
 github: tfausak/reveille
 license-file: LICENSE.markdown
 license: MIT
