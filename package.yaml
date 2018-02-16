@@ -5,6 +5,7 @@ category: Web
 description: Reveille aggregates Haskell Weekly feeds.
 extra-source-files:
   - CHANGELOG.markdown
+  - CODE_OF_CONDUCT.markdown
   - README.markdown
 github: tfausak/reveille
 license-file: LICENSE.markdown
