@@ -30,6 +30,10 @@ authors = Set.fromList (Either.rights
     "https://tomsmalley.github.io"
     Nothing
   , toAuthor
+    "Brent Yorgey"
+    "https://byorgey.wordpress.com"
+    (Just "https://byorgey.wordpress.com/feed/")
+  , toAuthor
     "Concert"
     "https://medium.com/@concertdaw"
     (Just "https://medium.com/feed/@concertdaw")
@@ -37,6 +41,14 @@ authors = Set.fromList (Either.rights
     "Daniel Bolivar"
     "https://www.dabolivar.com"
     (Just "https://www.dabolivar.com/index.xml")
+  , toAuthor
+    "Daniel Patterson"
+    "https://dbp.io"
+    Nothing -- https://github.com/dbp/website/issues/1
+  , toAuthor
+    "Eli Bendersky"
+    "https://eli.thegreenplace.net"
+    (Just "https://eli.thegreenplace.net/feeds/all.atom.xml")
   , toAuthor
     "FP Complete"
     "https://www.fpcomplete.com"
@@ -70,6 +82,14 @@ authors = Set.fromList (Either.rights
     "https://www.joachim-breitner.de"
     (Just "https://www.joachim-breitner.de/blog_feed.rss")
   , toAuthor
+    "Julie Moronuki"
+    "https://argumatronic.com"
+    (Just "https://argumatronic.com/rss.xml")
+  , toAuthor
+    "Luke Picciau"
+    "https://itscode.red"
+    (Just "https://itscode.red/index.xml")
+  , toAuthor
     "Mark Karpov"
     "https://markkarpov.com"
     (Just "https://markkarpov.com/feed.atom")
@@ -97,6 +117,10 @@ authors = Set.fromList (Either.rights
     "Oskar Wickstr\xf6m"
     "https://wickstrom.tech"
     (Just "https://wickstrom.tech/feed.xml")
+  , toAuthor
+    "Patrick Thompson"
+    "http://blog.sumtypeofway.com"
+    (Just "http://blog.sumtypeofway.com/rss/")
   , toAuthor
     "Ryan Scott"
     "https://ryanglscott.github.io"
