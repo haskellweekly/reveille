@@ -22,7 +22,7 @@ toItem feedItem = do
   rawName <- maybeToEither "missing item name" (Feed.getItemTitle feedItem)
   name <- toName (Text.unpack rawName)
   rawUrl <- maybeToEither "missing item url" (Feed.getItemLink feedItem)
-  url <- toUrl (Text.unpack rawUrl)
+  url <- either (Left . show) Right (toUrl (Text.unpack rawUrl))
   maybeTime <- maybeToEither "missing item time" (Feed.getItemPublishDate feedItem)
   time <- maybeToEither "invalid item time" maybeTime
   pure Item

@@ -2,6 +2,7 @@ module Reveille.Url
   ( Url
   , toUrl
   , fromUrl
+  , UrlError(..)
   ) where
 
 import qualified Control.Monad as Monad
@@ -11,12 +12,17 @@ newtype Url = Url
   { unwrapUrl :: Uri.URI
   } deriving (Eq, Ord, Show)
 
-toUrl :: String -> Either String Url
+toUrl :: String -> Either UrlError Url
 toUrl string = do
-  Monad.when (null string) (fail "empty URL")
+  Monad.when (null string) (Left (UrlErrorEmpty string))
   case Uri.parseAbsoluteURI string of
-    Nothing -> fail "invalid URL"
-    Just uri -> pure (Url uri)
+    Nothing -> Left (UrlErrorInvalid string)
+    Just uri -> Right (Url uri)
 
 fromUrl :: Url -> String
 fromUrl url = Uri.uriToString id (unwrapUrl url) ""
+
+data UrlError
+  = UrlErrorEmpty String
+  | UrlErrorInvalid String
+  deriving (Eq, Ord, Show)

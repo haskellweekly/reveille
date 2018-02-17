@@ -15,11 +15,11 @@ data Author = Author
 toAuthor :: String -> String -> Maybe String -> Either String Author
 toAuthor rawName rawUrl rawMaybeFeed = do
   name <- toName rawName
-  url <- toUrl rawUrl
+  url <- either (Left . show) Right (toUrl rawUrl)
   maybeFeed <- case rawMaybeFeed of
     Nothing -> pure Nothing
     Just rawFeedUrl -> do
-      feed <- toUrl rawFeedUrl
+      feed <- either (Left . show) Right (toUrl rawFeedUrl)
       pure (Just feed)
   pure Author
     { authorName = name
