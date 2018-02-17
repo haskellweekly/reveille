@@ -2,6 +2,7 @@ module Reveille.Server
   ( startServer
   ) where
 
+import Data.Function ((&))
 import Reveille.Author (Author, authorName, authorUrl)
 import Reveille.Database (Database, getRecentDatabaseItems)
 import Reveille.Item (Item, itemName, itemUrl, itemTime)
@@ -9,6 +10,7 @@ import Reveille.Name (fromName)
 import Reveille.Url (fromUrl)
 
 import qualified Control.Concurrent.STM as Stm
+import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Map as Map
 import qualified Data.Text as Text
@@ -17,10 +19,25 @@ import qualified Data.Time as Time
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
+import qualified Text.Printf as Printf
 import qualified Text.XML as Xml
 
 startServer :: Stm.TVar Database -> IO ()
-startServer database = Warp.run 3000 (makeApplication database)
+startServer database = Warp.runSettings settings (makeApplication database)
+
+settings :: Warp.Settings
+settings = Warp.defaultSettings
+  & Warp.setBeforeMainLoop (putStrLn "Starting server ...")
+  & Warp.setLogger (\ request status _ -> Printf.printf
+    "%s %s%s %d\n"
+    (Text.unpack (Text.decodeUtf8 (Wai.requestMethod request)))
+    (Text.unpack (Text.decodeUtf8 (Wai.rawPathInfo request)))
+    (Text.unpack (Text.decodeUtf8 (Wai.rawQueryString request)))
+    (Http.statusCode status))
+  & Warp.setOnExceptionResponse (\ _ ->
+    Wai.responseLBS Http.internalServerError500 [] LazyBytes.empty)
+  & Warp.setPort 8080
+  & Warp.setServerName Bytes.empty
 
 makeApplication :: Stm.TVar Database -> Wai.Application
 makeApplication database request respond = do
@@ -106,7 +123,7 @@ getIndexHandler database = do
   now <- Time.getCurrentTime
   let items = getRecentDatabaseItems db now
   let
-    settings = Xml.def { Xml.rsXMLDeclaration = False }
+    xmlSettings = Xml.def { Xml.rsXMLDeclaration = False }
     doctype = Xml.Doctype (Text.pack "html") Nothing
     prologue = Xml.Prologue [] (Just doctype) []
     htmlHead = xmlNode "head" []
@@ -137,7 +154,7 @@ getIndexHandler database = do
       ]
     html = xmlElement "html" [] [htmlHead, htmlBody]
     document = Xml.Document prologue html []
-    body = Xml.renderLBS settings document
+    body = Xml.renderLBS xmlSettings document
   pure (Wai.responseLBS
     Http.ok200
     [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
