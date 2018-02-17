@@ -15,6 +15,6 @@ defaultMain = do
   manager <- Client.newTlsManager
   database <- Stm.newTVarIO initialDatabase
 
-  Async.concurrently_
+  Async.race_
     (startAggregator manager database)
     (startServer database)
