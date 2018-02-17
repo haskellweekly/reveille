@@ -4,6 +4,7 @@ module Reveille.Server
 
 import Data.Function ((&))
 import Reveille.Author (Author, authorName, authorUrl)
+import Reveille.Authors (authors)
 import Reveille.Database (Database, getRecentDatabaseItems)
 import Reveille.Item (Item, itemName, itemUrl, itemTime)
 import Reveille.Name (fromName)
@@ -13,6 +14,7 @@ import qualified Control.Concurrent.STM as Stm
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
@@ -151,6 +153,14 @@ getIndexHandler database = do
           , xmlContent (Time.formatTime Time.defaultTimeLocale "%B %-e" (itemTime item))
           ])
         items)
+      , xmlNode "h2" [] [xmlContent "Authors"]
+      , xmlNode "ul" [] (map
+        (\ author -> xmlNode "li" []
+          [ xmlNode "a"
+            [("href", fromUrl (authorUrl author))]
+            [xmlContent (fromName (authorName author))]
+          ])
+        (Set.toAscList authors))
       ]
     html = xmlElement "html" [] [htmlHead, htmlBody]
     document = Xml.Document prologue html []
