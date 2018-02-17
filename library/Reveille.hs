@@ -35,11 +35,11 @@ defaultMain = do
   database <- Stm.newTVarIO initialDatabase
 
   Async.concurrently_
-    (startUpdater manager database)
+    (startAggregator manager database)
     (startServer database)
 
-startUpdater :: Client.Manager -> Stm.TVar Database -> IO ()
-startUpdater manager database = Monad.forever (do
+startAggregator :: Client.Manager -> Stm.TVar Database -> IO ()
+startAggregator manager database = Monad.forever (do
   Foldable.for_ authors (\ author -> do
     Printf.printf "- %s <%s>\n"
       (fromName (authorName author))
