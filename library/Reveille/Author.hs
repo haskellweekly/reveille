@@ -1,10 +1,13 @@
 module Reveille.Author
   ( Author(..)
   , toAuthor
+  , AuthorError(..)
   ) where
 
-import Reveille.Name (Name, toName)
-import Reveille.Url (Url, toUrl)
+import Reveille.Name (Name, toName, NameError)
+import Reveille.Url (Url, toUrl, UrlError)
+
+import qualified Control.Arrow as Arrow
 
 data Author = Author
   { authorName :: Name
@@ -12,17 +15,23 @@ data Author = Author
   , authorFeed :: Maybe Url
   } deriving (Eq, Ord, Show)
 
-toAuthor :: String -> String -> Maybe String -> Either String Author
+toAuthor :: String -> String -> Maybe String -> Either AuthorError Author
 toAuthor rawName rawUrl rawMaybeFeed = do
-  name <- either (Left . show) Right (toName rawName)
-  url <- either (Left . show) Right (toUrl rawUrl)
+  name <- Arrow.left AuthorErrorBadName (toName rawName)
+  url <- Arrow.left AuthorErrorBadUrl (toUrl rawUrl)
   maybeFeed <- case rawMaybeFeed of
     Nothing -> pure Nothing
     Just rawFeedUrl -> do
-      feed <- either (Left . show) Right (toUrl rawFeedUrl)
+      feed <- Arrow.left AuthorErrorBadFeed (toUrl rawFeedUrl)
       pure (Just feed)
   pure Author
     { authorName = name
     , authorUrl = url
     , authorFeed = maybeFeed
     }
+
+data AuthorError
+  = AuthorErrorBadName NameError
+  | AuthorErrorBadUrl UrlError
+  | AuthorErrorBadFeed UrlError
+  deriving (Eq, Ord, Show)
