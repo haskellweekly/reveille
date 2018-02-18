@@ -44,7 +44,7 @@ authors = Set.fromList (Either.rights
   , toAuthor
     "Daniel Patterson"
     "https://dbp.io"
-    Nothing -- https://github.com/dbp/website/issues/1
+    (Just "https://dbp.io/rss.xml")
   , toAuthor
     "Eli Bendersky"
     "https://eli.thegreenplace.net"
