@@ -3,7 +3,7 @@ module Reveille.Server
   ) where
 
 import Data.Function ((&))
-import Reveille.Author (Author, authorName, authorUrl)
+import Reveille.Author (Author, authorFeed, authorName, authorUrl)
 import Reveille.Authors (authors)
 import Reveille.Database (Database, getRecentDatabaseItems)
 import Reveille.Item (Item, itemName, itemUrl, itemTime)
@@ -14,6 +14,7 @@ import qualified Control.Concurrent.STM as Stm
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -51,6 +52,7 @@ makeApplication database request respond = do
     ("GET", ["robots.txt"]) -> getRobotsHandler
     ("GET", ["favicon.ico"]) -> getFaviconHandler
     ("GET", []) -> getIndexHandler database
+    ("GET", ["authors.opml"]) -> getAuthorsHandler
     _ -> defaultHandler
   respond response
 
@@ -169,6 +171,27 @@ getIndexHandler database = do
     Http.ok200
     [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
     body)
+
+getAuthorsHandler :: Applicative m => m Wai.Response
+getAuthorsHandler =
+  let
+    status = Http.ok200
+    headers = [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/xml"))]
+    opmlHead = xmlNode "head" [] []
+    opmlBody = xmlNode "body" [] (Maybe.mapMaybe
+      (\ author -> do
+        feed <- authorFeed author
+        pure (xmlNode "outline"
+          [ ("text", fromName (authorName author))
+          , ("type", "rss")
+          , ("xmlUrl", fromUrl feed)
+          ] []))
+      (Set.toAscList authors))
+    opml = xmlElement "opml" [("version", "1.0")] [opmlHead, opmlBody]
+    document = xmlDocument opml
+    body = Xml.renderLBS Xml.def document
+    response = Wai.responseLBS status headers body
+  in pure response
 
 defaultHandler :: Applicative m => m Wai.Response
 defaultHandler = pure (Wai.responseLBS Http.notFound404 [] LazyBytes.empty)
