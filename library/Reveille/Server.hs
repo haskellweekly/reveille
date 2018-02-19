@@ -14,6 +14,7 @@ import Reveille.Url (fromUrl)
 import qualified Control.Concurrent.STM as Stm
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Lazy as LazyBytes
+import qualified Data.Either as Either
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
@@ -33,9 +34,9 @@ settings = Warp.defaultSettings
   & Warp.setBeforeMainLoop (putStrLn "Starting server ...")
   & Warp.setLogger (\ request status _ -> Printf.printf
     "%s %s%s %d\n"
-    (fromUtf8 (Wai.requestMethod request))
-    (fromUtf8 (Wai.rawPathInfo request))
-    (fromUtf8 (Wai.rawQueryString request))
+    (Either.fromRight "?" (fromUtf8 (Wai.requestMethod request)))
+    (Either.fromRight "?" (fromUtf8 (Wai.rawPathInfo request)))
+    (Either.fromRight "?" (fromUtf8 (Wai.rawQueryString request)))
     (Http.statusCode status))
   & Warp.setOnExceptionResponse (\ _ ->
     Wai.responseLBS Http.internalServerError500 [] LazyBytes.empty)
@@ -44,7 +45,7 @@ settings = Warp.defaultSettings
 
 makeApplication :: Stm.TVar Database -> Wai.Application
 makeApplication database request respond = do
-  let method = fromUtf8 (Wai.requestMethod request)
+  let method = Either.fromRight "?" (fromUtf8 (Wai.requestMethod request))
   let path = map Text.unpack (Wai.pathInfo request)
   response <- case (method, path) of
     ("GET", ["feed.atom"]) -> getFeedHandler database
