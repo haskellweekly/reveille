@@ -7,6 +7,7 @@ import Reveille.Authors (authors)
 import Reveille.Database (Database, updateDatabase)
 import Reveille.Item (Item(itemName, itemTime), toItem)
 import Reveille.Name (fromName)
+import Reveille.Unicode (toUtf8)
 import Reveille.Url (fromUrl)
 
 import qualified Control.Concurrent as Concurrent
@@ -15,8 +16,6 @@ import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
 import qualified Data.Foldable as Foldable
 import qualified Data.Set as Set
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
 import qualified Data.Version as Version
 import qualified Network.HTTP.Client as Client
@@ -69,7 +68,7 @@ getAuthorItems manager author = do
     userAgent = "reveille/" ++ version
     request = initialRequest
       { Client.requestHeaders =
-        [ (Http.hUserAgent, Text.encodeUtf8 (Text.pack userAgent))
+        [ (Http.hUserAgent, toUtf8 userAgent)
         ]
       }
   response <- Client.httpLbs request manager

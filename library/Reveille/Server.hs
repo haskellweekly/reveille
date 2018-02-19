@@ -8,6 +8,7 @@ import Reveille.Authors (authors)
 import Reveille.Database (Database, getRecentDatabaseItems)
 import Reveille.Item (Item, itemName, itemUrl, itemTime)
 import Reveille.Name (fromName)
+import Reveille.Unicode (fromUtf8, toUtf8)
 import Reveille.Url (fromUrl)
 
 import qualified Control.Concurrent.STM as Stm
@@ -17,7 +18,6 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
@@ -33,9 +33,9 @@ settings = Warp.defaultSettings
   & Warp.setBeforeMainLoop (putStrLn "Starting server ...")
   & Warp.setLogger (\ request status _ -> Printf.printf
     "%s %s%s %d\n"
-    (Text.unpack (Text.decodeUtf8 (Wai.requestMethod request)))
-    (Text.unpack (Text.decodeUtf8 (Wai.rawPathInfo request)))
-    (Text.unpack (Text.decodeUtf8 (Wai.rawQueryString request)))
+    (fromUtf8 (Wai.requestMethod request))
+    (fromUtf8 (Wai.rawPathInfo request))
+    (fromUtf8 (Wai.rawQueryString request))
     (Http.statusCode status))
   & Warp.setOnExceptionResponse (\ _ ->
     Wai.responseLBS Http.internalServerError500 [] LazyBytes.empty)
@@ -44,7 +44,7 @@ settings = Warp.defaultSettings
 
 makeApplication :: Stm.TVar Database -> Wai.Application
 makeApplication database request respond = do
-  let method = Text.unpack (Text.decodeUtf8 (Wai.requestMethod request))
+  let method = fromUtf8 (Wai.requestMethod request)
   let path = map Text.unpack (Wai.pathInfo request)
   response <- case (method, path) of
     ("GET", ["feed.atom"]) -> getFeedHandler database
@@ -74,7 +74,7 @@ getFeedHandler database = do
   let document = xmlDocument feed
   pure (Wai.responseLBS
     Http.ok200
-    [(Http.hContentType, Text.encodeUtf8 (Text.pack "application/atom+xml"))]
+    [(Http.hContentType, toUtf8 "application/atom+xml")]
     (Xml.renderLBS Xml.def document))
 
 getHealthCheckHandler :: Applicative m => m Wai.Response
@@ -84,10 +84,10 @@ getRobotsHandler :: Applicative m => m Wai.Response
 getRobotsHandler = pure (Wai.responseLBS
   Http.ok200
   []
-  (LazyBytes.fromStrict (Text.encodeUtf8 (Text.pack (unlines
+  (LazyBytes.fromStrict (toUtf8 (unlines
     [ "User-Agent: *"
     , "Disallow:"
-    ])))))
+    ]))))
 
 getFaviconHandler :: Applicative m => m Wai.Response
 getFaviconHandler = pure (Wai.responseLBS
@@ -169,14 +169,14 @@ getIndexHandler database = do
     body = Xml.renderLBS xmlSettings document
   pure (Wai.responseLBS
     Http.ok200
-    [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/html; charset=utf-8"))]
+    [(Http.hContentType, toUtf8 "text/html; charset=utf-8")]
     body)
 
 getAuthorsHandler :: Applicative m => m Wai.Response
 getAuthorsHandler =
   let
     status = Http.ok200
-    headers = [(Http.hContentType, Text.encodeUtf8 (Text.pack "text/xml"))]
+    headers = [(Http.hContentType, toUtf8 "text/xml")]
     opmlHead = xmlNode "head" [] []
     opmlBody = xmlNode "body" [] (Maybe.mapMaybe
       (\ author -> do
