@@ -1,44 +1,49 @@
 module Reveille.Database
   ( Database
   , initialDatabase
-  , updateDatabase
-  , getRecentDatabaseItems
+  , addDatabaseAuthor
+  , addDatabaseItems
+  , addDatabaseEntries
+  , getDatabaseAuthors
+  , getDatabaseEntries
   ) where
 
-import Data.Function ((&))
-import Reveille.Author (Author)
-import Reveille.Item (Item, itemTime)
-
-import qualified Data.List as List
 import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
-import qualified Data.Ord as Ord
 import qualified Data.Set as Set
-import qualified Data.Time as Time
+import qualified Reveille.Author as Reveille
+import qualified Reveille.Entry as Reveille
+import qualified Reveille.Item as Reveille
 
 newtype Database = Database
-  { unwrapDatabase :: Map.Map Author (Set.Set Item)
+  { unwrapDatabase :: Map.Map Reveille.Author (Set.Set Reveille.Item)
   } deriving (Eq, Ord, Show)
 
 initialDatabase :: Database
 initialDatabase = Database Map.empty
 
-updateDatabase :: Author -> Set.Set Item -> Database -> Database
-updateDatabase author items database = Database (Map.insertWith Set.union author items (unwrapDatabase database))
+addDatabaseAuthor :: Reveille.Author -> Database -> Database
+addDatabaseAuthor author database = addDatabaseItems author Set.empty database
 
-getRecentDatabaseItems :: Database -> Time.UTCTime -> [(Author, Item)]
-getRecentDatabaseItems database now =
-  let twoWeeksAgo = Time.addUTCTime (-14 * Time.nominalDay) now
-  in database
-    & unwrapDatabase
-    & Map.toList
-    & concatMap (\ (author, items) -> items
-      & Set.toList
-      & Maybe.mapMaybe (\ item ->
-        if itemTime item > now then
-          Nothing
-        else if itemTime item < twoWeeksAgo then
-          Nothing
-        else
-          Just (author, item)))
-    & List.sortBy (Ord.comparing (\ (_, item) -> Ord.Down (itemTime item)))
+addDatabaseItems
+  :: Reveille.Author -> Set.Set Reveille.Item -> Database -> Database
+addDatabaseItems author items database =
+  Database (Map.insertWith Set.union author items (unwrapDatabase database))
+
+addDatabaseEntries :: Set.Set Reveille.Entry -> Database -> Database
+addDatabaseEntries entries database = foldr
+  (\entry -> addDatabaseItems
+    (Reveille.entryAuthor entry)
+    (Set.singleton (Reveille.entryItem entry))
+  )
+  database
+  entries
+
+getDatabaseAuthors :: Database -> Set.Set Reveille.Author
+getDatabaseAuthors database = Map.keysSet (unwrapDatabase database)
+
+getDatabaseEntries :: Database -> Set.Set Reveille.Entry
+getDatabaseEntries database = Set.unions
+  (map
+    (\(author, items) -> Set.map (Reveille.Entry author) items)
+    (Map.toList (unwrapDatabase database))
+  )

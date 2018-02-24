@@ -14,12 +14,12 @@ newtype Name = Name
 
 toName :: String -> Either NameError Name
 toName string = do
-  Monad.when (null string) (Left (NameErrorEmpty string))
+  Monad.when (null string) (Left NameErrorEmpty)
   Right (Name (Text.pack string))
 
 fromName :: Name -> String
 fromName name = Text.unpack (unwrapName name)
 
 data NameError
-  = NameErrorEmpty String
+  = NameErrorEmpty
   deriving (Eq, Ord, Show)

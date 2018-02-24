@@ -4,34 +4,35 @@ module Reveille.Author
   , AuthorError(..)
   ) where
 
-import Reveille.Name (Name, toName, NameError)
-import Reveille.Url (Url, toUrl, UrlError)
-
-import qualified Control.Arrow as Arrow
+import qualified Reveille.Name as Reveille
+import qualified Reveille.Url as Reveille
 
 data Author = Author
-  { authorName :: Name
-  , authorUrl :: Url
-  , authorFeed :: Maybe Url
+  { authorName :: Reveille.Name
+  , authorUrl :: Reveille.Url
+  , authorFeed :: Maybe Reveille.Url
   } deriving (Eq, Ord, Show)
 
 toAuthor :: String -> String -> Maybe String -> Either AuthorError Author
-toAuthor rawName rawUrl rawMaybeFeed = do
-  name <- Arrow.left AuthorErrorBadName (toName rawName)
-  url <- Arrow.left AuthorErrorBadUrl (toUrl rawUrl)
-  maybeFeed <- case rawMaybeFeed of
-    Nothing -> pure Nothing
-    Just rawFeedUrl -> do
-      feed <- Arrow.left AuthorErrorBadFeed (toUrl rawFeedUrl)
-      pure (Just feed)
-  pure Author
-    { authorName = name
-    , authorUrl = url
-    , authorFeed = maybeFeed
-    }
+toAuthor rawName rawUrl maybeRawFeed = do
+  name <- case Reveille.toName rawName of
+    Left nameError -> Left (AuthorErrorBadName nameError)
+    Right name -> Right name
+
+  url <- case Reveille.toUrl rawUrl of
+    Left urlError -> Left (AuthorErrorBadUrl urlError)
+    Right url -> Right url
+
+  maybeFeed <- case maybeRawFeed of
+    Nothing -> Right Nothing
+    Just rawFeed -> case Reveille.toUrl rawFeed of
+      Left urlError -> Left (AuthorErrorBadFeed urlError)
+      Right feed -> Right (Just feed)
+
+  pure Author {authorName = name, authorUrl = url, authorFeed = maybeFeed}
 
 data AuthorError
-  = AuthorErrorBadName NameError
-  | AuthorErrorBadUrl UrlError
-  | AuthorErrorBadFeed UrlError
+  = AuthorErrorBadName Reveille.NameError
+  | AuthorErrorBadUrl Reveille.UrlError
+  | AuthorErrorBadFeed Reveille.UrlError
   deriving (Eq, Ord, Show)

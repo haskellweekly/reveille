@@ -49,3 +49,15 @@ executable:
     - -threaded
   main: Main.hs
   source-dirs: executables
+
+tests:
+  test:
+    dependencies:
+      hspec: '>= 2.4.4 && < 2.5'
+      reveille: -any
+    ghc-options:
+      - -rtsopts
+      - -threaded
+      - -Wno-missing-import-lists
+    main: Main.hs
+    source-dirs: tests

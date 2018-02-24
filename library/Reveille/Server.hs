@@ -2,200 +2,247 @@ module Reveille.Server
   ( startServer
   ) where
 
-import Data.Function ((&))
-import Reveille.Author (Author, authorFeed, authorName, authorUrl)
-import Reveille.Authors (authors)
-import Reveille.Database (Database, getRecentDatabaseItems)
-import Reveille.Item (Item, itemName, itemUrl, itemTime)
-import Reveille.Name (fromName)
-import Reveille.Unicode (fromUtf8, toUtf8)
-import Reveille.Url (fromUrl)
-
 import qualified Control.Concurrent.STM as Stm
+import qualified Control.Exception as Exception
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Either as Either
+import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
+import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Time as Time
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
+import qualified Reveille.Author as Reveille
+import qualified Reveille.Database as Reveille
+import qualified Reveille.Entry as Reveille
+import qualified Reveille.Item as Reveille
+import qualified Reveille.Name as Reveille
+import qualified Reveille.Unicode as Reveille
+import qualified Reveille.Url as Reveille
 import qualified Text.Printf as Printf
 import qualified Text.XML as Xml
 
-startServer :: Stm.TVar Database -> IO ()
-startServer database = Warp.runSettings settings (makeApplication database)
+startServer :: Stm.TVar Reveille.Database -> IO ()
+startServer database =
+  Warp.runSettings serverSettings (makeApplication database)
 
-settings :: Warp.Settings
-settings = Warp.defaultSettings
-  & Warp.setBeforeMainLoop (putStrLn "Starting server ...")
-  & Warp.setLogger (\ request status _ -> Printf.printf
-    "%s %s%s %d\n"
-    (Either.fromRight "?" (fromUtf8 (Wai.requestMethod request)))
-    (Either.fromRight "?" (fromUtf8 (Wai.rawPathInfo request)))
-    (Either.fromRight "?" (fromUtf8 (Wai.rawQueryString request)))
-    (Http.statusCode status))
-  & Warp.setOnExceptionResponse (\ _ ->
-    Wai.responseLBS Http.internalServerError500 [] LazyBytes.empty)
-  & Warp.setPort 8080
-  & Warp.setServerName Bytes.empty
+serverSettings :: Warp.Settings
+serverSettings = Warp.setBeforeMainLoop
+  beforeMainLoop
+  (Warp.setLogger
+    logger
+    (Warp.setOnExceptionResponse
+      onExceptionResponse
+      (Warp.setPort port (Warp.setServerName serverName Warp.defaultSettings))
+    )
+  )
 
-makeApplication :: Stm.TVar Database -> Wai.Application
+beforeMainLoop :: IO ()
+beforeMainLoop = putStrLn "Starting server ..."
+
+logger :: Wai.Request -> Http.Status -> Maybe Integer -> IO ()
+logger request status _ = Printf.printf
+  "%s %s%s %d\n"
+  (Either.fromRight "?" (Reveille.fromUtf8 (Wai.requestMethod request)))
+  (Either.fromRight "?" (Reveille.fromUtf8 (Wai.rawPathInfo request)))
+  (Either.fromRight "?" (Reveille.fromUtf8 (Wai.rawQueryString request)))
+  (Http.statusCode status)
+
+onExceptionResponse :: Exception.SomeException -> Wai.Response
+onExceptionResponse _ =
+  Wai.responseLBS Http.internalServerError500 [] LazyBytes.empty
+
+port :: Warp.Port
+port = 8080
+
+serverName :: Bytes.ByteString
+serverName = Bytes.empty
+
+makeApplication :: Stm.TVar Reveille.Database -> Wai.Application
 makeApplication database request respond = do
-  let method = Either.fromRight "?" (fromUtf8 (Wai.requestMethod request))
-  let path = map Text.unpack (Wai.pathInfo request)
-  response <- case (method, path) of
-    ("GET", ["feed.atom"]) -> getFeedHandler database
-    ("GET", ["health-check"]) -> getHealthCheckHandler
-    ("GET", ["robots.txt"]) -> getRobotsHandler
-    ("GET", ["favicon.ico"]) -> getFaviconHandler
-    ("GET", []) -> getIndexHandler database
-    ("GET", ["authors.opml"]) -> getAuthorsHandler
-    _ -> defaultHandler
+  db <- Stm.readTVarIO database
+  now <- Time.getCurrentTime
+  let response = routeRequest request db now
   respond response
 
-getFeedHandler :: Stm.TVar Database -> IO Wai.Response
-getFeedHandler database = do
-  db <- Stm.readTVarIO database
-  now <- Time.getCurrentTime
-  let items = getRecentDatabaseItems db now
-  let entries = map itemToEntry items
-  let feed = xmlElement
-        "feed"
-        [("xmlns", "http://www.w3.org/2005/Atom")]
-        ( xmlNode "title" [] [xmlContent "Haskell Weekly"]
-        : xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
-        : xmlNode "updated" [] [xmlContent (rfc3339 now)]
-        : xmlNode "link" [("rel", "self"), ("href", "http://localhost:3000/feed.atom")] []
-        : entries
-        )
-  let document = xmlDocument feed
-  pure (Wai.responseLBS
-    Http.ok200
-    [(Http.hContentType, toUtf8 "application/atom+xml")]
-    (Xml.renderLBS Xml.def document))
+routeRequest
+  :: Wai.Request -> Reveille.Database -> Time.UTCTime -> Wai.Response
+routeRequest request database now =
+  case (requestMethod request, requestPath request) of
+    ("GET", []) -> getIndexHandler database now
+    ("GET", ["authors.opml"]) -> getAuthorsHandler database
+    ("GET", ["favicon.ico"]) -> getFaviconHandler
+    ("GET", ["feed.atom"]) -> getFeedHandler database now
+    ("GET", ["health-check"]) -> getHealthCheckHandler
+    ("GET", ["robots.txt"]) -> getRobotsHandler
+    _ -> defaultHandler
 
-getHealthCheckHandler :: Applicative m => m Wai.Response
-getHealthCheckHandler = pure (Wai.responseLBS Http.ok200 [] LazyBytes.empty)
+requestMethod :: Wai.Request -> String
+requestMethod request =
+  Either.fromRight "?" (Reveille.fromUtf8 (Wai.requestMethod request))
 
-getRobotsHandler :: Applicative m => m Wai.Response
-getRobotsHandler = pure (Wai.responseLBS
-  Http.ok200
-  []
-  (LazyBytes.fromStrict (toUtf8 (unlines
-    [ "User-Agent: *"
-    , "Disallow:"
-    ]))))
+requestPath :: Wai.Request -> [String]
+requestPath request = map Text.unpack (Wai.pathInfo request)
 
-getFaviconHandler :: Applicative m => m Wai.Response
-getFaviconHandler = pure (Wai.responseLBS
-  Http.ok200
-  []
-  (LazyBytes.pack
-    [ 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x10
-    , 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, 0xb0, 0x00
-    , 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x28, 0x00
-    , 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x20, 0x00
-    , 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00
-    , 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x79, 0x48
-    , 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    ]))
-
-getIndexHandler :: Stm.TVar Database -> IO Wai.Response
-getIndexHandler database = do
-  db <- Stm.readTVarIO database
-  now <- Time.getCurrentTime
-  let items = getRecentDatabaseItems db now
-  let
-    xmlSettings = Xml.def { Xml.rsXMLDeclaration = False }
-    doctype = Xml.Doctype (Text.pack "html") Nothing
-    prologue = Xml.Prologue [] (Just doctype) []
-    htmlHead = xmlNode "head" []
-      [ xmlNode "meta" [("charset", "utf-8")] []
-      , xmlNode "title" [] [xmlContent "Haskell Weekly"]
-      , xmlNode "link"
-        [ ("rel", "alternate")
-        , ("type", "application/atom+xml")
-        , ("href", "feed.atom")
-        ] []
-      ]
-    htmlBody = xmlNode "body" []
-      [ xmlNode "h1" [] [xmlContent "Haskell Weekly"]
-      , xmlNode "p" []
-        [ xmlContent "Subscribe to "
-        , xmlNode "a" [("href", "feed.atom")] [xmlContent "the Atom feed"]
-        , xmlContent "."
+getIndexHandler :: Reveille.Database -> Time.UTCTime -> Wai.Response
+getIndexHandler database now
+  = let
+      items = getRecentDatabaseEntries database now
+      authors = Reveille.getDatabaseAuthors database
+      settings = Xml.def { Xml.rsXMLDeclaration = False }
+      doctype = Xml.Doctype (Text.pack "html") Nothing
+      prologue = Xml.Prologue [] (Just doctype) []
+      htmlHead = xmlNode
+        "head"
+        []
+        [ xmlNode "meta" [("charset", "utf-8")] []
+        , xmlNode "title" [] [xmlContent "Haskell Weekly"]
+        , xmlNode
+          "link"
+          [ ("rel", "alternate")
+          , ("type", "application/atom+xml")
+          , ("href", "feed.atom")
+          ]
+          []
         ]
-      , xmlNode "ol" [] (map
-        (\ (author, item) -> xmlNode "li" []
-          [ xmlNode "a" [("href", fromUrl (itemUrl item))] [xmlContent (fromName (itemName item))]
-          , xmlContent " by "
-          , xmlContent (fromName (authorName author))
-          , xmlContent " on "
-          , xmlContent (Time.formatTime Time.defaultTimeLocale "%B %-e" (itemTime item))
-          ])
-        items)
-      , xmlNode "h2" [] [xmlContent "Authors"]
-      , xmlNode "ul" [] (map
-        (\ author -> xmlNode "li" []
-          [ xmlNode "a"
-            [("href", fromUrl (authorUrl author))]
-            [xmlContent (fromName (authorName author))]
-          ])
-        (Set.toAscList authors))
-      ]
-    html = xmlElement "html" [] [htmlHead, htmlBody]
-    document = Xml.Document prologue html []
-    body = Xml.renderLBS xmlSettings document
-  pure (Wai.responseLBS
-    Http.ok200
-    [(Http.hContentType, toUtf8 "text/html; charset=utf-8")]
-    body)
+      htmlBody = xmlNode
+        "body"
+        []
+        [ xmlNode "h1" [] [xmlContent "Haskell Weekly"]
+        , xmlNode
+          "p"
+          []
+          [ xmlContent "Subscribe to "
+          , xmlNode "a" [("href", "feed.atom")] [xmlContent "the Atom feed"]
+          , xmlContent "."
+          ]
+        , xmlNode
+          "ol"
+          []
+          (map
+            (\entry -> xmlNode
+              "li"
+              []
+              [ xmlNode
+                "a"
+                [ ( "href"
+                  , Reveille.fromUrl
+                    (Reveille.itemUrl (Reveille.entryItem entry))
+                  )
+                ]
+                [ xmlContent
+                    (Reveille.fromName
+                      (Reveille.itemName (Reveille.entryItem entry))
+                    )
+                ]
+              , xmlContent " by "
+              , xmlContent
+                (Reveille.fromName
+                  (Reveille.authorName (Reveille.entryAuthor entry))
+                )
+              , xmlContent " on "
+              , xmlContent
+                (Time.formatTime
+                  Time.defaultTimeLocale
+                  "%B %-e"
+                  (Reveille.itemTime (Reveille.entryItem entry))
+                )
+              ]
+            )
+            items
+          )
+        , xmlNode "h2" [] [xmlContent "Authors"]
+        , xmlNode
+          "ul"
+          []
+          (map
+            (\author -> xmlNode
+              "li"
+              []
+              [ xmlNode
+                  "a"
+                  [("href", Reveille.fromUrl (Reveille.authorUrl author))]
+                  [xmlContent (Reveille.fromName (Reveille.authorName author))]
+              ]
+            )
+            (Set.toAscList authors)
+          )
+        ]
+      html = xmlElement "html" [] [htmlHead, htmlBody]
+      document = Xml.Document prologue html []
+      body = Xml.renderLBS settings document
+    in Wai.responseLBS
+      Http.ok200
+      [(Http.hContentType, Reveille.toUtf8 "text/html; charset=utf-8")]
+      body
 
-getAuthorsHandler :: Applicative m => m Wai.Response
-getAuthorsHandler =
+getAuthorsHandler :: Reveille.Database -> Wai.Response
+getAuthorsHandler database =
   let
+    authors = Reveille.getDatabaseAuthors database
     status = Http.ok200
-    headers = [(Http.hContentType, toUtf8 "text/xml")]
+    headers = [(Http.hContentType, Reveille.toUtf8 "text/xml")]
     opmlHead = xmlNode "head" [] []
-    opmlBody = xmlNode "body" [] (Maybe.mapMaybe
-      (\ author -> do
-        feed <- authorFeed author
-        pure (xmlNode "outline"
-          [ ("text", fromName (authorName author))
-          , ("type", "rss")
-          , ("xmlUrl", fromUrl feed)
-          ] []))
-      (Set.toAscList authors))
+    makeOutline author feed = xmlNode
+      "outline"
+      [ ("text", Reveille.fromName (Reveille.authorName author))
+      , ("type", "rss")
+      , ("xmlUrl", Reveille.fromUrl feed)
+      ]
+      []
+    toOutline author = do
+      feed <- Reveille.authorFeed author
+      pure (makeOutline author feed)
+    opmlBody =
+      xmlNode "body" [] (Maybe.mapMaybe toOutline (Set.toAscList authors))
     opml = xmlElement "opml" [("version", "1.0")] [opmlHead, opmlBody]
     document = xmlDocument opml
     body = Xml.renderLBS Xml.def document
-    response = Wai.responseLBS status headers body
-  in pure response
+  in Wai.responseLBS status headers body
 
-defaultHandler :: Applicative m => m Wai.Response
-defaultHandler = pure (Wai.responseLBS Http.notFound404 [] LazyBytes.empty)
+getFaviconHandler :: Wai.Response
+getFaviconHandler = Wai.responseLBS Http.ok200 [] favicon
+
+getFeedHandler :: Reveille.Database -> Time.UTCTime -> Wai.Response
+getFeedHandler database now =
+  let
+    title = xmlNode "title" [] [xmlContent "Haskell Weekly"]
+    id_ = xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
+    updated = xmlNode "updated" [] [xmlContent (rfc3339 now)]
+    link = xmlNode
+      "link"
+      [("rel", "self"), ("href", "http://localhost:3000/feed.atom")]
+      []
+    items = getRecentDatabaseEntries database now
+    entries = map entryToXml items
+    feed = xmlElement
+      "feed"
+      [("xmlns", "http://www.w3.org/2005/Atom")]
+      (title : id_ : updated : link : entries)
+    document = xmlDocument feed
+  in Wai.responseLBS
+    Http.ok200
+    [(Http.hContentType, Reveille.toUtf8 "application/atom+xml")]
+    (Xml.renderLBS Xml.def document)
+
+getHealthCheckHandler :: Wai.Response
+getHealthCheckHandler = Wai.responseLBS Http.ok200 [] LazyBytes.empty
+
+getRobotsHandler :: Wai.Response
+getRobotsHandler = Wai.responseLBS
+  Http.ok200
+  []
+  (LazyBytes.fromStrict
+    (Reveille.toUtf8 (unlines ["User-Agent: *", "Disallow:"]))
+  )
+
+defaultHandler :: Wai.Response
+defaultHandler = Wai.responseLBS Http.notFound404 [] LazyBytes.empty
 
 xmlName :: String -> Xml.Name
 xmlName string = Xml.Name (Text.pack string) Nothing Nothing
@@ -203,11 +250,12 @@ xmlName string = Xml.Name (Text.pack string) Nothing Nothing
 xmlElement :: String -> [(String, String)] -> [Xml.Node] -> Xml.Element
 xmlElement name attributes children = Xml.Element
   (xmlName name)
-  (Map.fromList (map (\ (k, v) -> (xmlName k, Text.pack v)) attributes))
+  (Map.fromList (map (\(k, v) -> (xmlName k, Text.pack v)) attributes))
   children
 
 xmlNode :: String -> [(String, String)] -> [Xml.Node] -> Xml.Node
-xmlNode name attributes children = Xml.NodeElement (xmlElement name attributes children)
+xmlNode name attributes children =
+  Xml.NodeElement (xmlElement name attributes children)
 
 xmlContent :: String -> Xml.Node
 xmlContent string = Xml.NodeContent (Text.pack string)
@@ -216,18 +264,263 @@ xmlDocument :: Xml.Element -> Xml.Document
 xmlDocument element = Xml.Document (Xml.Prologue [] Nothing []) element []
 
 rfc3339 :: Time.UTCTime -> String
-rfc3339 time = Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
+rfc3339 time =
+  Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
-itemToEntry :: (Author, Item) -> Xml.Node
-itemToEntry (author, item) =
-  let url = fromUrl (itemUrl item)
-  in xmlNode "entry" []
-    [ xmlNode "title" [] [xmlContent (fromName (itemName item))]
-    , xmlNode "id" [] [xmlContent url]
-    , xmlNode "updated" [] [xmlContent (rfc3339 (itemTime item))]
-    , xmlNode "link" [("href", url)] []
-    , xmlNode "author" []
-      [ xmlNode "name" [] [xmlContent (fromName (authorName author))]
-      , xmlNode "uri" [] [xmlContent (fromUrl (authorUrl author))]
-      ]
-    ]
+entryToXml :: Reveille.Entry -> Xml.Node
+entryToXml entry
+  = let
+      url = Reveille.fromUrl (Reveille.itemUrl (Reveille.entryItem entry))
+      title = xmlNode
+        "title"
+        []
+        [ xmlContent
+            (Reveille.fromName (Reveille.itemName (Reveille.entryItem entry)))
+        ]
+      id_ = xmlNode "id" [] [xmlContent url]
+      updated = xmlNode
+        "updated"
+        []
+        [xmlContent (rfc3339 (Reveille.itemTime (Reveille.entryItem entry)))]
+      link = xmlNode "link" [("href", url)] []
+      author = xmlNode
+        "author"
+        []
+        [ xmlNode
+          "name"
+          []
+          [ xmlContent
+              (Reveille.fromName
+                (Reveille.authorName (Reveille.entryAuthor entry))
+              )
+          ]
+        , xmlNode
+          "uri"
+          []
+          [ xmlContent
+              (Reveille.fromUrl
+                (Reveille.authorUrl (Reveille.entryAuthor entry))
+              )
+          ]
+        ]
+    in xmlNode "entry" [] [title, id_, updated, link, author]
+
+getRecentDatabaseEntries
+  :: Reveille.Database -> Time.UTCTime -> [Reveille.Entry]
+getRecentDatabaseEntries database now =
+  sortEntriesByTime (filterItems now (Reveille.getDatabaseEntries database))
+
+filterItems :: Time.UTCTime -> Set.Set Reveille.Entry -> Set.Set Reveille.Entry
+filterItems now entries =
+  Set.filter (\entry -> isNotTooNew now entry && isNotTooOld now entry) entries
+
+isNotTooNew :: Time.UTCTime -> Reveille.Entry -> Bool
+isNotTooNew now entry = Reveille.itemTime (Reveille.entryItem entry) <= now
+
+isNotTooOld :: Time.UTCTime -> Reveille.Entry -> Bool
+isNotTooOld now entry =
+  Reveille.itemTime (Reveille.entryItem entry) > twoWeeksBefore now
+
+sortEntriesByTime :: Set.Set Reveille.Entry -> [Reveille.Entry]
+sortEntriesByTime items = List.sortBy compareEntriesByTime (Set.toList items)
+
+compareEntriesByTime :: Reveille.Entry -> Reveille.Entry -> Ordering
+compareEntriesByTime = Ord.comparing
+  (\entry -> Ord.Down (Reveille.itemTime (Reveille.entryItem entry)))
+
+twoWeeksBefore :: Time.UTCTime -> Time.UTCTime
+twoWeeksBefore time = Time.addUTCTime (-twoWeeks) time
+
+twoWeeks :: Time.NominalDiffTime
+twoWeeks = 14 * Time.nominalDay
+
+-- This is pretty ridiculous.
+favicon :: LazyBytes.ByteString
+favicon = LazyBytes.pack
+  [ 0x00
+  , 0x00
+  , 0x01
+  , 0x00
+  , 0x01
+  , 0x00
+  , 0x10
+  , 0x10
+  , 0x02
+  , 0x00
+  , 0x01
+  , 0x00
+  , 0x01
+  , 0x00
+  , 0xb0
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x16
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x28
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x10
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x20
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x01
+  , 0x00
+  , 0x01
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x40
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x02
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x02
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x79
+  , 0x48
+  , 0x70
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  , 0x00
+  ]

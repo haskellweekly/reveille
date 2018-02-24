@@ -14,7 +14,7 @@ newtype Url = Url
 
 toUrl :: String -> Either UrlError Url
 toUrl string = do
-  Monad.when (null string) (Left (UrlErrorEmpty string))
+  Monad.when (null string) (Left UrlErrorEmpty)
   case Uri.parseAbsoluteURI string of
     Nothing -> Left (UrlErrorInvalid string)
     Just uri -> Right (Url uri)
@@ -23,6 +23,6 @@ fromUrl :: Url -> String
 fromUrl url = Uri.uriToString id (unwrapUrl url) ""
 
 data UrlError
-  = UrlErrorEmpty String
+  = UrlErrorEmpty
   | UrlErrorInvalid String
   deriving (Eq, Ord, Show)
