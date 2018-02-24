@@ -1,6 +1,4 @@
-module Reveille.Server
-  ( startServer
-  ) where
+module Reveille.Internal.Server where
 
 import qualified Control.Concurrent.STM as Stm
 import qualified Control.Exception as Exception
@@ -17,13 +15,13 @@ import qualified Data.Time as Time
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
-import qualified Reveille.Author as Reveille
-import qualified Reveille.Database as Reveille
-import qualified Reveille.Entry as Reveille
-import qualified Reveille.Item as Reveille
-import qualified Reveille.Name as Reveille
-import qualified Reveille.Unicode as Reveille
-import qualified Reveille.Url as Reveille
+import qualified Reveille.Internal.Author as Reveille
+import qualified Reveille.Internal.Database as Reveille
+import qualified Reveille.Internal.Entry as Reveille
+import qualified Reveille.Internal.Item as Reveille
+import qualified Reveille.Internal.Name as Reveille
+import qualified Reveille.Internal.Unicode as Reveille
+import qualified Reveille.Internal.Url as Reveille
 import qualified Text.Printf as Printf
 import qualified Text.XML as Xml
 

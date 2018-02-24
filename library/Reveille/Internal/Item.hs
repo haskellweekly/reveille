@@ -1,13 +1,9 @@
-module Reveille.Item
-  ( Item(..)
-  , toItem
-  , ItemError(..)
-  ) where
+module Reveille.Internal.Item where
 
 import qualified Data.Text as Text
 import qualified Data.Time as Time
-import qualified Reveille.Name as Reveille
-import qualified Reveille.Url as Reveille
+import qualified Reveille.Internal.Name as Reveille
+import qualified Reveille.Internal.Url as Reveille
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
 

@@ -1,9 +1,4 @@
-module Reveille.Url
-  ( Url
-  , toUrl
-  , fromUrl
-  , UrlError(..)
-  ) where
+module Reveille.Internal.Url where
 
 import qualified Control.Monad as Monad
 import qualified Network.URI as Uri

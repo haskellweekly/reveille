@@ -1,9 +1,4 @@
-module Reveille.Name
-  ( Name
-  , toName
-  , fromName
-  , NameError(..)
-  ) where
+module Reveille.Internal.Name where
 
 import qualified Control.Monad as Monad
 import qualified Data.Text as Text

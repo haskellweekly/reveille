@@ -1,18 +1,10 @@
-module Reveille.Database
-  ( Database
-  , initialDatabase
-  , addDatabaseAuthor
-  , addDatabaseItems
-  , addDatabaseEntries
-  , getDatabaseAuthors
-  , getDatabaseEntries
-  ) where
+module Reveille.Internal.Database where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Reveille.Author as Reveille
-import qualified Reveille.Entry as Reveille
-import qualified Reveille.Item as Reveille
+import qualified Reveille.Internal.Author as Reveille
+import qualified Reveille.Internal.Entry as Reveille
+import qualified Reveille.Internal.Item as Reveille
 
 newtype Database = Database
   { unwrapDatabase :: Map.Map Reveille.Author (Set.Set Reveille.Item)

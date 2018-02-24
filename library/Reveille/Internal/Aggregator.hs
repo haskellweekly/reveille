@@ -1,6 +1,4 @@
-module Reveille.Aggregator
-  ( startAggregator
-  ) where
+module Reveille.Internal.Aggregator where
 
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Concurrent.STM as Stm
@@ -12,12 +10,12 @@ import qualified Data.Version as Version
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Types as Http
 import qualified Paths_reveille as This
-import qualified Reveille.Author as Reveille
-import qualified Reveille.Database as Reveille
-import qualified Reveille.Entry as Reveille
-import qualified Reveille.Item as Reveille
-import qualified Reveille.Unicode as Reveille
-import qualified Reveille.Url as Reveille
+import qualified Reveille.Internal.Author as Reveille
+import qualified Reveille.Internal.Database as Reveille
+import qualified Reveille.Internal.Entry as Reveille
+import qualified Reveille.Internal.Item as Reveille
+import qualified Reveille.Internal.Unicode as Reveille
+import qualified Reveille.Internal.Url as Reveille
 import qualified System.IO as IO
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed

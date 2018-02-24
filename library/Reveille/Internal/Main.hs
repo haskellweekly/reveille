@@ -1,16 +1,13 @@
-module Reveille.Main
-  ( defaultMain
-  , initialAuthors
-  ) where
+module Reveille.Internal.Main where
 
 import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.STM as Stm
 import qualified Data.Set as Set
 import qualified Network.HTTP.Client.TLS as Client
-import qualified Reveille.Aggregator as Reveille
-import qualified Reveille.Author as Reveille
-import qualified Reveille.Database as Reveille
-import qualified Reveille.Server as Reveille
+import qualified Reveille.Internal.Aggregator as Reveille
+import qualified Reveille.Internal.Author as Reveille
+import qualified Reveille.Internal.Database as Reveille
+import qualified Reveille.Internal.Server as Reveille
 
 defaultMain :: IO ()
 defaultMain = do

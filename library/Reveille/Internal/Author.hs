@@ -1,11 +1,7 @@
-module Reveille.Author
-  ( Author(..)
-  , toAuthor
-  , AuthorError(..)
-  ) where
+module Reveille.Internal.Author where
 
-import qualified Reveille.Name as Reveille
-import qualified Reveille.Url as Reveille
+import qualified Reveille.Internal.Name as Reveille
+import qualified Reveille.Internal.Url as Reveille
 
 data Author = Author
   { authorName :: Reveille.Name

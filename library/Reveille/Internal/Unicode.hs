@@ -1,7 +1,4 @@
-module Reveille.Unicode
-  ( fromUtf8
-  , toUtf8
-  ) where
+module Reveille.Internal.Unicode where
 
 import qualified Data.ByteString as Bytes
 import qualified Data.Text as Text
