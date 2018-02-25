@@ -31,7 +31,7 @@ defaultMain = do
 initialAuthors :: Set.Set (Either Reveille.AuthorError Reveille.Author)
 initialAuthors = Set.fromList
   (map
-    toAuthor
+    (\ (name, url, feed) -> Reveille.toAuthor name url feed)
     [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
     , ( "Alexis King"
       , "https://lexi-lambda.github.io"
@@ -167,8 +167,3 @@ initialAuthors = Set.fromList
       )
     ]
   )
-
-toAuthor
-  :: (String, String, Maybe String)
-  -> Either Reveille.AuthorError Reveille.Author
-toAuthor (name, url, feed) = Reveille.toAuthor name url feed
