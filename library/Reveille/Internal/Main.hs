@@ -4,34 +4,34 @@ import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.STM as Stm
 import qualified Data.Set as Set
 import qualified Network.HTTP.Client.TLS as Client
-import qualified Reveille.Internal.Aggregator as Reveille
-import qualified Reveille.Internal.Author as Reveille
-import qualified Reveille.Internal.Database as Reveille
-import qualified Reveille.Internal.Server as Reveille
+import qualified Reveille.Internal.Aggregator as Aggregator
+import qualified Reveille.Internal.Author as Author
+import qualified Reveille.Internal.Database as Database
+import qualified Reveille.Internal.Server as Server
 
 defaultMain :: IO ()
 defaultMain = do
   manager <- Client.newTlsManager
-  database <- Stm.newTVarIO Reveille.initialDatabase
+  database <- Stm.newTVarIO Database.initialDatabase
 
   Stm.atomically
     (mapM_
       (\result -> case result of
         Left authorError -> fail (show authorError)
         Right author ->
-          Stm.modifyTVar database (Reveille.addDatabaseAuthor author)
+          Stm.modifyTVar database (Database.addDatabaseAuthor author)
       )
       initialAuthors
     )
 
   Async.race_
-    (Reveille.startAggregator manager database)
-    (Reveille.startServer database)
+    (Aggregator.startAggregator manager database)
+    (Server.startServer database)
 
-initialAuthors :: Set.Set (Either Reveille.AuthorError Reveille.Author)
+initialAuthors :: Set.Set (Either Author.AuthorError Author.Author)
 initialAuthors = Set.fromList
   (map
-    (\ (name, url, feed) -> Reveille.toAuthor name url feed)
+    (\ (name, url, feed) -> Author.toAuthor name url feed)
     [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
     , ( "Alexis King"
       , "https://lexi-lambda.github.io"

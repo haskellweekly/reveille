@@ -1,9 +1,9 @@
 module Reveille.Internal.Entry where
 
-import qualified Reveille.Internal.Author as Reveille
-import qualified Reveille.Internal.Item as Reveille
+import qualified Reveille.Internal.Author as Author
+import qualified Reveille.Internal.Item as Item
 
 data Entry = Entry
-  { entryAuthor :: Reveille.Author
-  , entryItem :: Reveille.Item
+  { entryAuthor :: Author.Author
+  , entryItem :: Item.Item
   } deriving (Eq, Ord, Show)

@@ -15,17 +15,17 @@ import qualified Data.Time as Time
 import qualified Network.HTTP.Types as Http
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
-import qualified Reveille.Internal.Author as Reveille
-import qualified Reveille.Internal.Database as Reveille
-import qualified Reveille.Internal.Entry as Reveille
-import qualified Reveille.Internal.Item as Reveille
-import qualified Reveille.Internal.Name as Reveille
-import qualified Reveille.Internal.Unicode as Reveille
-import qualified Reveille.Internal.Url as Reveille
+import qualified Reveille.Internal.Author as Author
+import qualified Reveille.Internal.Database as Database
+import qualified Reveille.Internal.Entry as Entry
+import qualified Reveille.Internal.Item as Item
+import qualified Reveille.Internal.Name as Name
+import qualified Reveille.Internal.Unicode as Unicode
+import qualified Reveille.Internal.Url as Url
 import qualified Text.Printf as Printf
 import qualified Text.XML as Xml
 
-startServer :: Stm.TVar Reveille.Database -> IO ()
+startServer :: Stm.TVar Database.Database -> IO ()
 startServer database =
   Warp.runSettings serverSettings (makeApplication database)
 
@@ -46,9 +46,9 @@ beforeMainLoop = putStrLn "Starting server ..."
 logger :: Wai.Request -> Http.Status -> Maybe Integer -> IO ()
 logger request status _ = Printf.printf
   "%s %s%s %d\n"
-  (Either.fromRight "?" (Reveille.fromUtf8 (Wai.requestMethod request)))
-  (Either.fromRight "?" (Reveille.fromUtf8 (Wai.rawPathInfo request)))
-  (Either.fromRight "?" (Reveille.fromUtf8 (Wai.rawQueryString request)))
+  (Either.fromRight "?" (Unicode.fromUtf8 (Wai.requestMethod request)))
+  (Either.fromRight "?" (Unicode.fromUtf8 (Wai.rawPathInfo request)))
+  (Either.fromRight "?" (Unicode.fromUtf8 (Wai.rawQueryString request)))
   (Http.statusCode status)
 
 onExceptionResponse :: Exception.SomeException -> Wai.Response
@@ -61,7 +61,7 @@ port = 8080
 serverName :: Bytes.ByteString
 serverName = Bytes.empty
 
-makeApplication :: Stm.TVar Reveille.Database -> Wai.Application
+makeApplication :: Stm.TVar Database.Database -> Wai.Application
 makeApplication database request respond = do
   db <- Stm.readTVarIO database
   now <- Time.getCurrentTime
@@ -69,7 +69,7 @@ makeApplication database request respond = do
   respond response
 
 routeRequest
-  :: Wai.Request -> Reveille.Database -> Time.UTCTime -> Wai.Response
+  :: Wai.Request -> Database.Database -> Time.UTCTime -> Wai.Response
 routeRequest request database now =
   case (requestMethod request, requestPath request) of
     ("GET", []) -> getIndexHandler database now
@@ -82,16 +82,16 @@ routeRequest request database now =
 
 requestMethod :: Wai.Request -> String
 requestMethod request =
-  Either.fromRight "?" (Reveille.fromUtf8 (Wai.requestMethod request))
+  Either.fromRight "?" (Unicode.fromUtf8 (Wai.requestMethod request))
 
 requestPath :: Wai.Request -> [String]
 requestPath request = map Text.unpack (Wai.pathInfo request)
 
-getIndexHandler :: Reveille.Database -> Time.UTCTime -> Wai.Response
+getIndexHandler :: Database.Database -> Time.UTCTime -> Wai.Response
 getIndexHandler database now
   = let
       items = getRecentDatabaseEntries database now
-      authors = Reveille.getDatabaseAuthors database
+      authors = Database.getDatabaseAuthors database
       settings = Xml.def { Xml.rsXMLDeclaration = False }
       doctype = Xml.Doctype (Text.pack "html") Nothing
       prologue = Xml.Prologue [] (Just doctype) []
@@ -129,26 +129,26 @@ getIndexHandler database now
               [ xmlNode
                 "a"
                 [ ( "href"
-                  , Reveille.fromUrl
-                    (Reveille.itemUrl (Reveille.entryItem entry))
+                  , Url.fromUrl
+                    (Item.itemUrl (Entry.entryItem entry))
                   )
                 ]
                 [ xmlContent
-                    (Reveille.fromName
-                      (Reveille.itemName (Reveille.entryItem entry))
+                    (Name.fromName
+                      (Item.itemName (Entry.entryItem entry))
                     )
                 ]
               , xmlContent " by "
               , xmlContent
-                (Reveille.fromName
-                  (Reveille.authorName (Reveille.entryAuthor entry))
+                (Name.fromName
+                  (Author.authorName (Entry.entryAuthor entry))
                 )
               , xmlContent " on "
               , xmlContent
                 (Time.formatTime
                   Time.defaultTimeLocale
                   "%B %-e"
-                  (Reveille.itemTime (Reveille.entryItem entry))
+                  (Item.itemTime (Entry.entryItem entry))
                 )
               ]
             )
@@ -164,8 +164,8 @@ getIndexHandler database now
               []
               [ xmlNode
                   "a"
-                  [("href", Reveille.fromUrl (Reveille.authorUrl author))]
-                  [xmlContent (Reveille.fromName (Reveille.authorName author))]
+                  [("href", Url.fromUrl (Author.authorUrl author))]
+                  [xmlContent (Name.fromName (Author.authorName author))]
               ]
             )
             (Set.toAscList authors)
@@ -176,25 +176,25 @@ getIndexHandler database now
       body = Xml.renderLBS settings document
     in Wai.responseLBS
       Http.ok200
-      [(Http.hContentType, Reveille.toUtf8 "text/html; charset=utf-8")]
+      [(Http.hContentType, Unicode.toUtf8 "text/html; charset=utf-8")]
       body
 
-getAuthorsHandler :: Reveille.Database -> Wai.Response
+getAuthorsHandler :: Database.Database -> Wai.Response
 getAuthorsHandler database =
   let
-    authors = Reveille.getDatabaseAuthors database
+    authors = Database.getDatabaseAuthors database
     status = Http.ok200
-    headers = [(Http.hContentType, Reveille.toUtf8 "text/xml")]
+    headers = [(Http.hContentType, Unicode.toUtf8 "text/xml")]
     opmlHead = xmlNode "head" [] []
     makeOutline author feed = xmlNode
       "outline"
-      [ ("text", Reveille.fromName (Reveille.authorName author))
+      [ ("text", Name.fromName (Author.authorName author))
       , ("type", "rss")
-      , ("xmlUrl", Reveille.fromUrl feed)
+      , ("xmlUrl", Url.fromUrl feed)
       ]
       []
     toOutline author = do
-      feed <- Reveille.authorFeed author
+      feed <- Author.authorFeed author
       pure (makeOutline author feed)
     opmlBody =
       xmlNode "body" [] (Maybe.mapMaybe toOutline (Set.toAscList authors))
@@ -206,7 +206,7 @@ getAuthorsHandler database =
 getFaviconHandler :: Wai.Response
 getFaviconHandler = Wai.responseLBS Http.ok200 [] favicon
 
-getFeedHandler :: Reveille.Database -> Time.UTCTime -> Wai.Response
+getFeedHandler :: Database.Database -> Time.UTCTime -> Wai.Response
 getFeedHandler database now =
   let
     title = xmlNode "title" [] [xmlContent "Haskell Weekly"]
@@ -225,7 +225,7 @@ getFeedHandler database now =
     document = xmlDocument feed
   in Wai.responseLBS
     Http.ok200
-    [(Http.hContentType, Reveille.toUtf8 "application/atom+xml")]
+    [(Http.hContentType, Unicode.toUtf8 "application/atom+xml")]
     (Xml.renderLBS Xml.def document)
 
 getHealthCheckHandler :: Wai.Response
@@ -236,7 +236,7 @@ getRobotsHandler = Wai.responseLBS
   Http.ok200
   []
   (LazyBytes.fromStrict
-    (Reveille.toUtf8 (unlines ["User-Agent: *", "Disallow:"]))
+    (Unicode.toUtf8 (unlines ["User-Agent: *", "Disallow:"]))
   )
 
 defaultHandler :: Wai.Response
@@ -265,21 +265,21 @@ rfc3339 :: Time.UTCTime -> String
 rfc3339 time =
   Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
-entryToXml :: Reveille.Entry -> Xml.Node
+entryToXml :: Entry.Entry -> Xml.Node
 entryToXml entry
   = let
-      url = Reveille.fromUrl (Reveille.itemUrl (Reveille.entryItem entry))
+      url = Url.fromUrl (Item.itemUrl (Entry.entryItem entry))
       title = xmlNode
         "title"
         []
         [ xmlContent
-            (Reveille.fromName (Reveille.itemName (Reveille.entryItem entry)))
+            (Name.fromName (Item.itemName (Entry.entryItem entry)))
         ]
       id_ = xmlNode "id" [] [xmlContent url]
       updated = xmlNode
         "updated"
         []
-        [xmlContent (rfc3339 (Reveille.itemTime (Reveille.entryItem entry)))]
+        [xmlContent (rfc3339 (Item.itemTime (Entry.entryItem entry)))]
       link = xmlNode "link" [("href", url)] []
       author = xmlNode
         "author"
@@ -288,43 +288,43 @@ entryToXml entry
           "name"
           []
           [ xmlContent
-              (Reveille.fromName
-                (Reveille.authorName (Reveille.entryAuthor entry))
+              (Name.fromName
+                (Author.authorName (Entry.entryAuthor entry))
               )
           ]
         , xmlNode
           "uri"
           []
           [ xmlContent
-              (Reveille.fromUrl
-                (Reveille.authorUrl (Reveille.entryAuthor entry))
+              (Url.fromUrl
+                (Author.authorUrl (Entry.entryAuthor entry))
               )
           ]
         ]
     in xmlNode "entry" [] [title, id_, updated, link, author]
 
 getRecentDatabaseEntries
-  :: Reveille.Database -> Time.UTCTime -> [Reveille.Entry]
+  :: Database.Database -> Time.UTCTime -> [Entry.Entry]
 getRecentDatabaseEntries database now =
-  sortEntriesByTime (filterItems now (Reveille.getDatabaseEntries database))
+  sortEntriesByTime (filterItems now (Database.getDatabaseEntries database))
 
-filterItems :: Time.UTCTime -> Set.Set Reveille.Entry -> Set.Set Reveille.Entry
+filterItems :: Time.UTCTime -> Set.Set Entry.Entry -> Set.Set Entry.Entry
 filterItems now entries =
   Set.filter (\entry -> isNotTooNew now entry && isNotTooOld now entry) entries
 
-isNotTooNew :: Time.UTCTime -> Reveille.Entry -> Bool
-isNotTooNew now entry = Reveille.itemTime (Reveille.entryItem entry) <= now
+isNotTooNew :: Time.UTCTime -> Entry.Entry -> Bool
+isNotTooNew now entry = Item.itemTime (Entry.entryItem entry) <= now
 
-isNotTooOld :: Time.UTCTime -> Reveille.Entry -> Bool
+isNotTooOld :: Time.UTCTime -> Entry.Entry -> Bool
 isNotTooOld now entry =
-  Reveille.itemTime (Reveille.entryItem entry) > twoWeeksBefore now
+  Item.itemTime (Entry.entryItem entry) > twoWeeksBefore now
 
-sortEntriesByTime :: Set.Set Reveille.Entry -> [Reveille.Entry]
+sortEntriesByTime :: Set.Set Entry.Entry -> [Entry.Entry]
 sortEntriesByTime items = List.sortBy compareEntriesByTime (Set.toList items)
 
-compareEntriesByTime :: Reveille.Entry -> Reveille.Entry -> Ordering
+compareEntriesByTime :: Entry.Entry -> Entry.Entry -> Ordering
 compareEntriesByTime = Ord.comparing
-  (\entry -> Ord.Down (Reveille.itemTime (Reveille.entryItem entry)))
+  (\entry -> Ord.Down (Item.itemTime (Entry.entryItem entry)))
 
 twoWeeksBefore :: Time.UTCTime -> Time.UTCTime
 twoWeeksBefore time = Time.addUTCTime (-twoWeeks) time

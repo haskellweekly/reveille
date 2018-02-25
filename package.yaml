@@ -43,7 +43,8 @@ library:
   source-dirs: library
 
 executable:
-  dependencies: reveille
+  dependencies:
+    reveille: -any
   ghc-options:
     - -rtsopts
     - -threaded

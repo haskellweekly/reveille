@@ -2,40 +2,40 @@ module Reveille.Internal.Database where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Reveille.Internal.Author as Reveille
-import qualified Reveille.Internal.Entry as Reveille
-import qualified Reveille.Internal.Item as Reveille
+import qualified Reveille.Internal.Author as Author
+import qualified Reveille.Internal.Entry as Entry
+import qualified Reveille.Internal.Item as Item
 
 newtype Database = Database
-  { unwrapDatabase :: Map.Map Reveille.Author (Set.Set Reveille.Item)
+  { unwrapDatabase :: Map.Map Author.Author (Set.Set Item.Item)
   } deriving (Eq, Ord, Show)
 
 initialDatabase :: Database
 initialDatabase = Database Map.empty
 
-addDatabaseAuthor :: Reveille.Author -> Database -> Database
+addDatabaseAuthor :: Author.Author -> Database -> Database
 addDatabaseAuthor author database = addDatabaseItems author Set.empty database
 
 addDatabaseItems
-  :: Reveille.Author -> Set.Set Reveille.Item -> Database -> Database
+  :: Author.Author -> Set.Set Item.Item -> Database -> Database
 addDatabaseItems author items database =
   Database (Map.insertWith Set.union author items (unwrapDatabase database))
 
-addDatabaseEntries :: Set.Set Reveille.Entry -> Database -> Database
+addDatabaseEntries :: Set.Set Entry.Entry -> Database -> Database
 addDatabaseEntries entries database = foldr
   (\entry -> addDatabaseItems
-    (Reveille.entryAuthor entry)
-    (Set.singleton (Reveille.entryItem entry))
+    (Entry.entryAuthor entry)
+    (Set.singleton (Entry.entryItem entry))
   )
   database
   entries
 
-getDatabaseAuthors :: Database -> Set.Set Reveille.Author
+getDatabaseAuthors :: Database -> Set.Set Author.Author
 getDatabaseAuthors database = Map.keysSet (unwrapDatabase database)
 
-getDatabaseEntries :: Database -> Set.Set Reveille.Entry
+getDatabaseEntries :: Database -> Set.Set Entry.Entry
 getDatabaseEntries database = Set.unions
   (map
-    (\(author, items) -> Set.map (Reveille.Entry author) items)
+    (\(author, items) -> Set.map (Entry.Entry author) items)
     (Map.toList (unwrapDatabase database))
   )
