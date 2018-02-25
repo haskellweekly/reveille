@@ -31,7 +31,7 @@ defaultMain = do
 initialAuthors :: Set.Set (Either Author.AuthorError Author.Author)
 initialAuthors = Set.fromList
   (map
-    (\ (name, url, feed) -> Author.toAuthor name url feed)
+    (\(name, url, feed) -> Author.toAuthor name url feed)
     [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
     , ( "Alexis King"
       , "https://lexi-lambda.github.io"

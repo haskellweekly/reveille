@@ -128,21 +128,13 @@ getIndexHandler database now
               []
               [ xmlNode
                 "a"
-                [ ( "href"
-                  , Url.fromUrl
-                    (Item.itemUrl (Entry.entryItem entry))
-                  )
-                ]
+                [("href", Url.fromUrl (Item.itemUrl (Entry.entryItem entry)))]
                 [ xmlContent
-                    (Name.fromName
-                      (Item.itemName (Entry.entryItem entry))
-                    )
+                    (Name.fromName (Item.itemName (Entry.entryItem entry)))
                 ]
               , xmlContent " by "
               , xmlContent
-                (Name.fromName
-                  (Author.authorName (Entry.entryAuthor entry))
-                )
+                (Name.fromName (Author.authorName (Entry.entryAuthor entry)))
               , xmlContent " on "
               , xmlContent
                 (Time.formatTime
@@ -272,9 +264,7 @@ entryToXml entry
       title = xmlNode
         "title"
         []
-        [ xmlContent
-            (Name.fromName (Item.itemName (Entry.entryItem entry)))
-        ]
+        [xmlContent (Name.fromName (Item.itemName (Entry.entryItem entry)))]
       id_ = xmlNode "id" [] [xmlContent url]
       updated = xmlNode
         "updated"
@@ -288,23 +278,18 @@ entryToXml entry
           "name"
           []
           [ xmlContent
-              (Name.fromName
-                (Author.authorName (Entry.entryAuthor entry))
-              )
+              (Name.fromName (Author.authorName (Entry.entryAuthor entry)))
           ]
         , xmlNode
           "uri"
           []
           [ xmlContent
-              (Url.fromUrl
-                (Author.authorUrl (Entry.entryAuthor entry))
-              )
+              (Url.fromUrl (Author.authorUrl (Entry.entryAuthor entry)))
           ]
         ]
     in xmlNode "entry" [] [title, id_, updated, link, author]
 
-getRecentDatabaseEntries
-  :: Database.Database -> Time.UTCTime -> [Entry.Entry]
+getRecentDatabaseEntries :: Database.Database -> Time.UTCTime -> [Entry.Entry]
 getRecentDatabaseEntries database now =
   sortEntriesByTime (filterItems now (Database.getDatabaseEntries database))
 
@@ -323,8 +308,8 @@ sortEntriesByTime :: Set.Set Entry.Entry -> [Entry.Entry]
 sortEntriesByTime items = List.sortBy compareEntriesByTime (Set.toList items)
 
 compareEntriesByTime :: Entry.Entry -> Entry.Entry -> Ordering
-compareEntriesByTime = Ord.comparing
-  (\entry -> Ord.Down (Item.itemTime (Entry.entryItem entry)))
+compareEntriesByTime =
+  Ord.comparing (\entry -> Ord.Down (Item.itemTime (Entry.entryItem entry)))
 
 twoWeeksBefore :: Time.UTCTime -> Time.UTCTime
 twoWeeksBefore time = Time.addUTCTime (-twoWeeks) time

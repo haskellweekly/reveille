@@ -16,8 +16,7 @@ initialDatabase = Database Map.empty
 addDatabaseAuthor :: Author.Author -> Database -> Database
 addDatabaseAuthor author database = addDatabaseItems author Set.empty database
 
-addDatabaseItems
-  :: Author.Author -> Set.Set Item.Item -> Database -> Database
+addDatabaseItems :: Author.Author -> Set.Set Item.Item -> Database -> Database
 addDatabaseItems author items database =
   Database (Map.insertWith Set.union author items (unwrapDatabase database))
 

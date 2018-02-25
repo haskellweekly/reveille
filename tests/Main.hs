@@ -21,34 +21,31 @@ main = hspec . parallel . describe "Reveille" $ do
     describe "toAuthor" $ do
 
       it "fails with an empty name" $ do
-        toAuthor "" "" Nothing `shouldBe`
-          Left (AuthorErrorBadName NameErrorEmpty)
+        toAuthor "" "" Nothing
+          `shouldBe` Left (AuthorErrorBadName NameErrorEmpty)
 
       it "fails with an empty URL" $ do
-        toAuthor "Name" "" Nothing `shouldBe`
-          Left (AuthorErrorBadUrl UrlErrorEmpty)
+        toAuthor "Name" "" Nothing
+          `shouldBe` Left (AuthorErrorBadUrl UrlErrorEmpty)
 
       it "fails with an invalid URL" $ do
-        toAuthor "Name" "not a url" Nothing `shouldBe`
-          Left (AuthorErrorBadUrl (UrlErrorInvalid "not a url"))
+        toAuthor "Name" "not a url" Nothing
+          `shouldBe` Left (AuthorErrorBadUrl (UrlErrorInvalid "not a url"))
 
       it "succeeds without a feed" $ do
-        toAuthor "Name" "http://example.com" Nothing `shouldSatisfy`
-          Either.isRight
+        toAuthor "Name" "http://example.com" Nothing
+          `shouldSatisfy` Either.isRight
 
       it "fails with an empty feed" $ do
-        toAuthor "Name" "http://example.com" (Just "") `shouldBe`
-          Left (AuthorErrorBadFeed UrlErrorEmpty)
+        toAuthor "Name" "http://example.com" (Just "")
+          `shouldBe` Left (AuthorErrorBadFeed UrlErrorEmpty)
 
       it "fails with an invalid feed" $ do
-        toAuthor "Name" "http://example.com" (Just "not a url") `shouldBe`
-          Left (AuthorErrorBadFeed (UrlErrorInvalid "not a url"))
+        toAuthor "Name" "http://example.com" (Just "not a url")
+          `shouldBe` Left (AuthorErrorBadFeed (UrlErrorInvalid "not a url"))
 
       it "succeeds with a feed" $ do
-        toAuthor
-          "Name"
-          "http://example.com"
-          (Just "http://example.com")
+        toAuthor "Name" "http://example.com" (Just "http://example.com")
           `shouldSatisfy` Either.isRight
 
   describe "Database" $ do
@@ -113,32 +110,40 @@ main = hspec . parallel . describe "Reveille" $ do
         time = Text.pack "Wed, 21 Feb 18 08:59:52 EST"
 
       it "fails with an empty name" $ do
-        toItem (Feed.AtomItem entry) `shouldBe`
-          Left (ItemErrorBadName NameErrorEmpty)
+        toItem (Feed.AtomItem entry)
+          `shouldBe` Left (ItemErrorBadName NameErrorEmpty)
 
       it "fails with no URL" $ do
-        toItem (Feed.AtomItem entry
-          { Atom.entryTitle = title
-          }) `shouldBe` Left ItemErrorNoUrl
+        toItem (Feed.AtomItem entry { Atom.entryTitle = title })
+          `shouldBe` Left ItemErrorNoUrl
 
       it "fails with an empty URL" $ do
-        toItem (Feed.AtomItem entry
-          { Atom.entryTitle = title
-          , Atom.entryLinks = [link]
-          }) `shouldBe` Left (ItemErrorBadUrl UrlErrorEmpty)
+        toItem
+            (Feed.AtomItem entry
+              { Atom.entryTitle = title
+              , Atom.entryLinks = [link]
+              }
+            )
+          `shouldBe` Left (ItemErrorBadUrl UrlErrorEmpty)
 
       it "fails with an invalid time" $ do
-        toItem (Feed.AtomItem entry
-          { Atom.entryTitle = title
-          , Atom.entryLinks = [link { Atom.linkHref = url }]
-          }) `shouldBe` Left ItemErrorInvalidTime
+        toItem
+            (Feed.AtomItem entry
+              { Atom.entryTitle = title
+              , Atom.entryLinks = [link { Atom.linkHref = url }]
+              }
+            )
+          `shouldBe` Left ItemErrorInvalidTime
 
       it "succeeds" $ do
-        toItem (Feed.AtomItem entry
-          { Atom.entryTitle = title
-          , Atom.entryLinks = [link { Atom.linkHref = url }]
-          , Atom.entryUpdated = time
-          }) `shouldSatisfy` Either.isRight
+        toItem
+            (Feed.AtomItem entry
+              { Atom.entryTitle = title
+              , Atom.entryLinks = [link { Atom.linkHref = url }]
+              , Atom.entryUpdated = time
+              }
+            )
+          `shouldSatisfy` Either.isRight
 
   describe "Main" $ do
 
@@ -180,8 +185,8 @@ main = hspec . parallel . describe "Reveille" $ do
         fromUtf8 (Bytes.pack [0xe2, 0x82, 0xac]) `shouldBe` Right "\x20ac"
 
       it "decodes a four byte character" $ do
-        fromUtf8 (Bytes.pack [0xf0, 0x90, 0x8d, 0x88]) `shouldBe`
-          Right "\x10348"
+        fromUtf8 (Bytes.pack [0xf0, 0x90, 0x8d, 0x88])
+          `shouldBe` Right "\x10348"
 
       it "fails with invalid Unicode" $ do
         fromUtf8 (Bytes.pack [0xc0]) `shouldSatisfy` Either.isLeft
@@ -205,8 +210,8 @@ main = hspec . parallel . describe "Reveille" $ do
     describe "fromUrl" $ do
 
       it "returns the original URL" $ do
-        fmap fromUrl (toUrl "http://example.com") `shouldBe`
-          Right "http://example.com"
+        fmap fromUrl (toUrl "http://example.com")
+          `shouldBe` Right "http://example.com"
 
     describe "toUrl" $ do
 
