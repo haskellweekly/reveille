@@ -9,7 +9,7 @@ extra-source-files:
   - package.yaml
   - README.markdown
   - stack.yaml
-github: tfausak/reveille
+github: haskellweekly/reveille
 license-file: LICENSE.markdown
 license: MIT
 maintainer: Taylor Fausak
