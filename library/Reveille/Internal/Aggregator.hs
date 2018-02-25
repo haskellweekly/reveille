@@ -6,16 +6,15 @@ import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Set as Set
-import qualified Data.Version as Version
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Types as Http
-import qualified Paths_reveille as This
 import qualified Reveille.Internal.Author as Reveille
 import qualified Reveille.Internal.Database as Reveille
 import qualified Reveille.Internal.Entry as Reveille
 import qualified Reveille.Internal.Item as Reveille
 import qualified Reveille.Internal.Unicode as Reveille
 import qualified Reveille.Internal.Url as Reveille
+import qualified Reveille.Internal.Version as Reveille
 import qualified System.IO as IO
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
@@ -81,10 +80,7 @@ parseUrl url = case Client.parseRequest (Reveille.fromUrl url) of
     }
 
 userAgent :: String
-userAgent = "reveille-" ++ version
-
-version :: String
-version = Version.showVersion This.version
+userAgent = "reveille-" ++ Reveille.versionString
 
 parseFeed :: LazyBytes.ByteString -> Either AggregatorError Feed.Feed
 parseFeed body = case Feed.parseFeedSource body of

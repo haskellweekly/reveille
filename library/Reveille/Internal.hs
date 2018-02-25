@@ -11,6 +11,7 @@ module Reveille.Internal
   , module Reveille.Internal.Server
   , module Reveille.Internal.Unicode
   , module Reveille.Internal.Url
+  , module Reveille.Internal.Version
   ) where
 
 import Reveille.Internal.Aggregator
@@ -23,3 +24,4 @@ import Reveille.Internal.Name
 import Reveille.Internal.Server
 import Reveille.Internal.Unicode
 import Reveille.Internal.Url
+import Reveille.Internal.Version

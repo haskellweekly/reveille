@@ -27,6 +27,8 @@ module Reveille
   , This.UrlError(..)
   , This.fromUtf8
   , This.toUtf8
+  , This.version
+  , This.versionString
   ) where
 
 import qualified Reveille.Internal as This
