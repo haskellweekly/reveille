@@ -115,8 +115,8 @@ getIndexHandler database now
         , xmlNode
           "p"
           []
-          [ xmlContent "Subscribe to "
-          , xmlNode "a" [("href", "feed.atom")] [xmlContent "the Atom feed"]
+          [ xmlContent "Subscribe to the "
+          , xmlNode "a" [("href", "feed.atom")] [xmlContent "Atom feed"]
           , xmlContent "."
           ]
         , xmlNode
@@ -147,6 +147,13 @@ getIndexHandler database now
             items
           )
         , xmlNode "h2" [] [xmlContent "Authors"]
+        , xmlNode
+          "p"
+          []
+          [ xmlContent "Download the "
+          , xmlNode "a" [("href", "authors.opml")] [xmlContent "authors OPML"]
+          , xmlContent "."
+          ]
         , xmlNode
           "ul"
           []
