@@ -29,7 +29,9 @@ toItem feedItem = do
 
   time <- case Feed.getItemPublishDate feedItem of
     Nothing -> Left ItemErrorNoTime
-    Just Nothing -> Left ItemErrorInvalidTime
+    Just Nothing -> case Feed.getItemPublishDateString feedItem of
+      Nothing -> Left ItemErrorNoTime
+      Just text -> Left (ItemErrorInvalidTime text)
     Just (Just time) -> Right time
 
   pure Item {itemName = name, itemUrl = url, itemTime = time}
@@ -40,5 +42,5 @@ data ItemError
   | ItemErrorNoUrl
   | ItemErrorBadUrl Url.UrlError
   | ItemErrorNoTime
-  | ItemErrorInvalidTime
+  | ItemErrorInvalidTime Text.Text
   deriving (Eq, Ord, Show)

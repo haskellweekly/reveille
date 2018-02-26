@@ -133,7 +133,7 @@ main = hspec . parallel . describe "Reveille" $ do
               , Atom.entryLinks = [link { Atom.linkHref = url }]
               }
             )
-          `shouldBe` Left ItemErrorInvalidTime
+          `shouldBe` Left (ItemErrorInvalidTime (Text.empty))
 
       it "succeeds" $ do
         toItem

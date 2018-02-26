@@ -11,6 +11,7 @@ import qualified Network.HTTP.Types as Http
 import qualified Reveille.Internal.Author as Author
 import qualified Reveille.Internal.Database as Database
 import qualified Reveille.Internal.Entry as Entry
+import qualified Reveille.Internal.Name as Name
 import qualified Reveille.Internal.Item as Item
 import qualified Reveille.Internal.Unicode as Unicode
 import qualified Reveille.Internal.Url as Url
@@ -40,7 +41,12 @@ runAggregator manager database = do
       (\exception -> do
         IO.hPutStrLn
           IO.stderr
-          (Exception.displayException (exception :: Exception.SomeException))
+          (concat
+            [ Name.fromName (Author.authorName author)
+            , ": "
+            , Exception.displayException (exception :: Exception.SomeException)
+            ]
+          )
       )
     )
     (Database.getDatabaseAuthors db)
@@ -62,9 +68,9 @@ fromRight e = case e of
 
 data AggregatorError
   = AggregatorErrorNoFeed
-  | AggregatorErrorInvalidUrl
-  | AggregatorErrorInvalidFeed
-  | AggregatorErrorInvalidItem
+  | AggregatorErrorInvalidUrl Url.Url
+  | AggregatorErrorInvalidFeed LazyBytes.ByteString
+  | AggregatorErrorInvalidItem Item.ItemError
   deriving Show
 
 getAuthorFeed :: Author.Author -> Either AggregatorError Url.Url
@@ -74,7 +80,7 @@ getAuthorFeed author = case Author.authorFeed author of
 
 parseUrl :: Url.Url -> Either AggregatorError Client.Request
 parseUrl url = case Client.parseRequest (Url.fromUrl url) of
-  Nothing -> Left AggregatorErrorInvalidUrl
+  Nothing -> Left (AggregatorErrorInvalidUrl url)
   Just request -> Right request
     { Client.requestHeaders = [(Http.hUserAgent, Unicode.toUtf8 userAgent)]
     }
@@ -84,7 +90,7 @@ userAgent = "reveille-" ++ Version.versionString
 
 parseFeed :: LazyBytes.ByteString -> Either AggregatorError Feed.Feed
 parseFeed body = case Feed.parseFeedSource body of
-  Nothing -> Left AggregatorErrorInvalidFeed
+  Nothing -> Left (AggregatorErrorInvalidFeed body)
   Just feed -> Right feed
 
 parseItems :: [Feed.Item] -> Either AggregatorError [Item.Item]
@@ -92,5 +98,5 @@ parseItems feedItems = mapM parseItem feedItems
 
 parseItem :: Feed.Item -> Either AggregatorError Item.Item
 parseItem feedItem = case Item.toItem feedItem of
-  Left _ -> Left AggregatorErrorInvalidItem
+  Left itemError -> Left (AggregatorErrorInvalidItem itemError)
   Right item -> Right item

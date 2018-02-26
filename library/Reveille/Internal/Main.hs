@@ -78,7 +78,7 @@ initialAuthors = Set.fromList
     , ("Monday Morning Haskell", "https://mmhaskell.com", Just "https://mmhaskell.com/blog?format=rss")
     , ("Neil Mitchell", "https://neilmitchell.blogspot.com", Just "https://neilmitchell.blogspot.com/feeds/posts/default")
     , ("Nuno Alexandre", "https://nunoalexandre.com", Just "https://nunoalexandre.com/feed.xml")
-    , ("Oleg Grenrus", "http://oleg.fi", Just "http://oleg.fi/gists/gists/atom.xml")
+    , ("Oleg Grenrus", "http://oleg.fi", Just "http://oleg.fi/gists/atom.xml")
     , ("Oskar Wickstr\xf6m", "https://wickstrom.tech", Just "https://wickstrom.tech/feed.xml")
     , ("Patrick Thompson", "http://blog.sumtypeofway.com", Just "http://blog.sumtypeofway.com/rss/")
     , ("Payton Turnage", "https://paytonturnage.com", Nothing) -- https://github.com/turnage/turnage.github.io/issues/2
