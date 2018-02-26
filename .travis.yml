@@ -1,0 +1,32 @@
+language: generic
+
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+
+cache:
+  directories:
+    - $HOME/.local/bin
+    - $HOME/.stack
+
+before_install:
+  - > # Install Stack.
+    ROOT='https://github.com/commercialhaskell/stack' &&
+    VERSION='1.6.5' &&
+    FILE="stack-$VERSION-linux-x86_64.tar.gz" &&
+    URL="$ROOT/releases/download/v$VERSION/$FILE" &&
+    BIN="$HOME/.local/bin" &&
+    curl --location --remote-name "$URL" &&
+    tar --extract --file "$FILE" &&
+    if ! test -d "$BIN"; then mkdir "$BIN"; fi &&
+    mv "$FILE/stack" "$BIN"
+
+install:
+  - stack setup
+  - stack build --only-dependencies --test
+
+script:
+  - stack build --no-run-tests --pedantic --test
+  - stack build --test
+  - stack sdist
