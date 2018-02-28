@@ -21,20 +21,17 @@ addDatabaseItems author items database =
   Database (Map.insertWith Set.union author items (unwrapDatabase database))
 
 addDatabaseEntries :: Set.Set Entry.Entry -> Database -> Database
-addDatabaseEntries entries database = foldr
-  (\entry -> addDatabaseItems
-    (Entry.entryAuthor entry)
-    (Set.singleton (Entry.entryItem entry))
-  )
+addDatabaseEntries entries database = foldr addDatabaseEntry database entries
+
+addDatabaseEntry :: Entry.Entry -> Database -> Database
+addDatabaseEntry entry database = addDatabaseItems
+  (Entry.entryAuthor entry)
+  (Set.singleton (Entry.entryItem entry))
   database
-  entries
 
 getDatabaseAuthors :: Database -> Set.Set Author.Author
 getDatabaseAuthors database = Map.keysSet (unwrapDatabase database)
 
 getDatabaseEntries :: Database -> Set.Set Entry.Entry
 getDatabaseEntries database = Set.unions
-  (map
-    (\(author, items) -> Set.map (Entry.Entry author) items)
-    (Map.toList (unwrapDatabase database))
-  )
+  (map (uncurry Entry.toEntrySet) (Map.toList (unwrapDatabase database)))

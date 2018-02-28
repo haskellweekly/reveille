@@ -4,14 +4,16 @@ import qualified Control.Concurrent as Concurrent
 import qualified Control.Concurrent.STM as Stm
 import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
+import qualified Control.Monad.Trans.Class as Trans
+import qualified Control.Monad.Trans.Except as Except
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Set as Set
+import qualified Data.Void as Void
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Types as Http
 import qualified Reveille.Internal.Author as Author
 import qualified Reveille.Internal.Database as Database
 import qualified Reveille.Internal.Entry as Entry
-import qualified Reveille.Internal.Name as Name
 import qualified Reveille.Internal.Item as Item
 import qualified Reveille.Internal.Unicode as Unicode
 import qualified Reveille.Internal.Url as Url
@@ -21,45 +23,69 @@ import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
 
-startAggregator :: Client.Manager -> Stm.TVar Database.Database -> IO a
-startAggregator manager database = Monad.forever
-  (do
-    runAggregator manager database
-    Concurrent.threadDelay (15 * 60 * 1000000)
-  )
+startAggregator :: Client.Manager -> Stm.TVar Database.Database -> IO Void.Void
+startAggregator manager database =
+  Monad.forever (runAggregator manager database)
 
 runAggregator :: Client.Manager -> Stm.TVar Database.Database -> IO ()
 runAggregator manager database = do
+  updateAuthors manager database
+  Concurrent.threadDelay (15 * 60 * 1000000)
+
+updateAuthors :: Client.Manager -> Stm.TVar Database.Database -> IO ()
+updateAuthors manager database = do
   db <- Stm.readTVarIO database
-  mapM_
-    (\author -> Exception.catch
-      (do
-        entries <- fetchAuthorEntries manager author
-        Stm.atomically
-          (Stm.modifyTVar database (Database.addDatabaseEntries entries))
-      )
-      (\exception -> do
-        IO.hPutStrLn
-          IO.stderr
-          (concat
-            [ Name.fromName (Author.authorName author)
-            , ": "
-            , Exception.displayException (exception :: Exception.SomeException)
-            ]
-          )
-      )
-    )
-    (Database.getDatabaseAuthors db)
+  mapM_ (updateAuthor manager database) (Database.getDatabaseAuthors db)
+
+updateAuthor
+  :: Client.Manager -> Stm.TVar Database.Database -> Author.Author -> IO ()
+updateAuthor manager database author = do
+  result <- fetchAuthorEntries (safeHttpLbs manager) author
+  case result of
+    Left aggregatorError -> IO.hPrint IO.stderr aggregatorError
+    Right entries -> Stm.atomically
+      (Stm.modifyTVar database (Database.addDatabaseEntries entries))
+
+type Response = Client.Response LazyBytes.ByteString
+
+safeHttpLbs
+  :: Client.Manager
+  -> Client.Request
+  -> IO (Either Client.HttpException Response)
+safeHttpLbs manager request = Exception.catch
+  (do
+    response <- Client.httpLbs request manager
+    pure (Right response)
+  )
+  (\exception -> pure (Left exception))
 
 fetchAuthorEntries
-  :: Client.Manager -> Author.Author -> IO (Set.Set Entry.Entry)
-fetchAuthorEntries manager author = do
-  url <- fromRight (getAuthorFeed author)
-  request <- fromRight (parseUrl url)
-  response <- Client.httpLbs request manager
-  feed <- fromRight (parseFeed (Client.responseBody response))
-  items <- fromRight (parseItems (Feed.feedItems feed))
-  pure (Set.fromList (map (Entry.Entry author) items))
+  :: Monad m
+  => (Client.Request -> m (Either Client.HttpException Response))
+  -> Author.Author
+  -> m (Either AggregatorError (Set.Set Entry.Entry))
+fetchAuthorEntries performRequest author =
+  Except.runExceptT (fetchAuthorEntriesT performRequest author)
+
+fetchAuthorEntriesT
+  :: Monad m
+  => (Client.Request -> m (Either Client.HttpException Response))
+  -> Author.Author
+  -> Except.ExceptT AggregatorError m (Set.Set Entry.Entry)
+fetchAuthorEntriesT performRequest author = do
+  url <- toExceptT (getAuthorFeed author)
+  request <- toExceptT (parseUrl url)
+  result <- Trans.lift (performRequest request)
+  response <- either
+    (\exception -> Except.throwE (AggregatorErrorHttpException exception))
+    pure
+    result
+  feed <- toExceptT (parseFeed (Client.responseBody response))
+  items <- toExceptT (parseItems (Feed.feedItems feed))
+  pure (Set.fromList (Entry.toEntries author items))
+
+toExceptT :: Monad m => Either e a -> Except.ExceptT e m a
+toExceptT = either Except.throwE pure
 
 fromRight :: (Show l, Monad m) => Either l r -> m r
 fromRight e = case e of
@@ -69,6 +95,7 @@ fromRight e = case e of
 data AggregatorError
   = AggregatorErrorNoFeed
   | AggregatorErrorInvalidUrl Url.Url
+  | AggregatorErrorHttpException Client.HttpException
   | AggregatorErrorInvalidFeed LazyBytes.ByteString
   | AggregatorErrorInvalidItem Item.ItemError
   deriving Show
