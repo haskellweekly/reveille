@@ -2,6 +2,7 @@ module Reveille.Internal.Item where
 
 import qualified Data.Text as Text
 import qualified Data.Time as Time
+import qualified Network.URI as Uri
 import qualified Reveille.Internal.Name as Name
 import qualified Reveille.Internal.Url as Url
 import qualified Text.Feed.Query as Feed
@@ -13,8 +14,8 @@ data Item = Item
   , itemTime :: Time.UTCTime
   } deriving (Eq, Ord, Show)
 
-toItem :: Feed.Item -> Either ItemError Item
-toItem feedItem = do
+toItem :: Url.Url -> Feed.Item -> Either ItemError Item
+toItem feedUrl feedItem = do
   name <- case Feed.getItemTitle feedItem of
     Nothing -> Left ItemErrorNoName
     Just title -> case Name.toName (Text.unpack title) of
@@ -23,9 +24,15 @@ toItem feedItem = do
 
   url <- case Feed.getItemLink feedItem of
     Nothing -> Left ItemErrorNoUrl
-    Just link -> case Url.toUrl (Text.unpack link) of
-      Left urlError -> Left (ItemErrorBadUrl urlError)
-      Right url -> Right url
+    Just linkText ->
+      let link = Text.unpack linkText
+      in
+        case Url.toUrl link of
+          Left urlError -> case Uri.parseURIReference link of
+            Nothing -> Left (ItemErrorBadUrl urlError)
+            Just path ->
+              Right (Url.Url (Uri.relativeTo path (Url.unwrapUrl feedUrl)))
+          Right url -> Right url
 
   time <- case Feed.getItemPublishDate feedItem of
     Nothing -> Left ItemErrorNoTime

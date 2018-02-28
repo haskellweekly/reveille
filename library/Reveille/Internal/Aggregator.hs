@@ -115,7 +115,7 @@ fetchAuthorEntriesT performRequest author = do
     pure
     result
   feed <- toExceptT (parseFeed (Client.responseBody response))
-  items <- toExceptT (parseItems (Feed.feedItems feed))
+  items <- toExceptT (parseItems url (Feed.feedItems feed))
   pure (Set.fromList (Entry.toEntries author items))
 
 toExceptT :: Monad m => Either e a -> Except.ExceptT e m a
@@ -154,10 +154,10 @@ parseFeed body = case Feed.parseFeedSource body of
   Nothing -> Left (AggregatorErrorInvalidFeed body)
   Just feed -> Right feed
 
-parseItems :: [Feed.Item] -> Either AggregatorError [Item.Item]
-parseItems feedItems = mapM parseItem feedItems
+parseItems :: Url.Url -> [Feed.Item] -> Either AggregatorError [Item.Item]
+parseItems feedUrl feedItems = mapM (parseItem feedUrl) feedItems
 
-parseItem :: Feed.Item -> Either AggregatorError Item.Item
-parseItem feedItem = case Item.toItem feedItem of
+parseItem :: Url.Url -> Feed.Item -> Either AggregatorError Item.Item
+parseItem feedUrl feedItem = case Item.toItem feedUrl feedItem of
   Left itemError -> Left (AggregatorErrorInvalidItem itemError)
   Right item -> Right item
