@@ -7,6 +7,7 @@ import qualified Control.Monad as Monad
 import qualified Control.Monad.Trans.Class as Trans
 import qualified Control.Monad.Trans.Except as Except
 import qualified Data.ByteString.Lazy as LazyBytes
+import qualified Data.Ratio as Ratio
 import qualified Data.Set as Set
 import qualified Data.Void as Void
 import qualified Network.HTTP.Client as Client
@@ -15,13 +16,15 @@ import qualified Reveille.Internal.Author as Author
 import qualified Reveille.Internal.Database as Database
 import qualified Reveille.Internal.Entry as Entry
 import qualified Reveille.Internal.Item as Item
+import qualified Reveille.Internal.Name as Name
 import qualified Reveille.Internal.Unicode as Unicode
 import qualified Reveille.Internal.Url as Url
 import qualified Reveille.Internal.Version as Version
-import qualified System.IO as IO
+import qualified System.Clock as Clock
 import qualified Text.Feed.Import as Feed
 import qualified Text.Feed.Query as Feed
 import qualified Text.Feed.Types as Feed
+import qualified Text.Printf as Printf
 
 startAggregator :: Client.Manager -> Stm.TVar Database.Database -> IO Void.Void
 startAggregator manager database =
@@ -34,15 +37,46 @@ runAggregator manager database = do
 
 updateAuthors :: Client.Manager -> Stm.TVar Database.Database -> IO ()
 updateAuthors manager database = do
+  putStrLn "Updating feeds ..."
   db <- Stm.readTVarIO database
-  mapM_ (updateAuthor manager database) (Database.getDatabaseAuthors db)
+  let authors = Database.getDatabaseAuthors db
+  ((), elapsed) <- timed (mapM_ (updateAuthor manager database) authors)
+  Printf.printf
+    "Updated %d feed%s in %.1f seconds.\n"
+    (Set.size authors)
+    (pluralize authors)
+    (timeSpecToDouble elapsed)
+
+timed :: IO a -> IO (a, Clock.TimeSpec)
+timed action = do
+  start <- Clock.getTime Clock.Monotonic
+  result <- action
+  stop <- Clock.getTime Clock.Monotonic
+  let elapsed = Clock.diffTimeSpec stop start
+  pure (result, elapsed)
+
+pluralize :: Set.Set a -> String
+pluralize xs = if Set.size xs == 1 then "" else "s"
+
+timeSpecToDouble :: Clock.TimeSpec -> Double
+timeSpecToDouble timeSpec =
+  rationalToDouble (fromNanos (Clock.toNanoSecs timeSpec))
+
+fromNanos :: Integer -> Rational
+fromNanos nanos = nanos Ratio.% 1000000000
+
+rationalToDouble :: Rational -> Double
+rationalToDouble rational = fromRational rational
 
 updateAuthor
   :: Client.Manager -> Stm.TVar Database.Database -> Author.Author -> IO ()
 updateAuthor manager database author = do
   result <- fetchAuthorEntries (safeHttpLbs manager) author
   case result of
-    Left aggregatorError -> IO.hPrint IO.stderr aggregatorError
+    Left aggregatorError -> Printf.printf
+      "%s: %s\n"
+      (Name.fromName (Author.authorName author))
+      (show aggregatorError)
     Right entries -> Stm.atomically
       (Stm.modifyTVar database (Database.addDatabaseEntries entries))
 
