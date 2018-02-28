@@ -46,7 +46,7 @@ rawInitialAuthors =
   , ("Ben Gamari", "https://bgamari.github.io", Just "https://bgamari.github.io/rss.xml")
   , ("Blue Dinosaur", "https://blue-dinosaur.github.io", Just "https://blue-dinosaur.github.io/feed.xml")
   , ("Brent Yorgey", "https://byorgey.wordpress.com", Just "https://byorgey.wordpress.com/feed/")
-  , ("Chris Martin", "https://chris-martin.org", Nothing) -- https://github.com/chris-martin/chris-martin.org/issues/8
+  , ("Chris Martin", "https://chris-martin.org", Just "https://chris-martin.org/rss.xml")
   , ("Codurance", "https://codurance.com", Just "https://codurance.com/atom.xml")
   , ("Concert", "https://medium.com/@concertdaw", Just "https://medium.com/feed/@concertdaw")
   , ("Csongor Kiss", "http://kcsongor.github.io", Just "http://kcsongor.github.io/feed.xml")
@@ -71,7 +71,7 @@ rawInitialAuthors =
   , ("Julie Moronuki", "https://argumatronic.com", Just "https://argumatronic.com/rss.xml")
   , ("Justin Le", "https://blog.jle.im", Just "http://feeds.feedburner.com/incodeblog")
   , ("Jyri-Matti L\xe4hteenm\xe4ki", "https://blog.lahteenmaki.net", Just "https://blog.lahteenmaki.net/rss.xml")
-  , ("LiquidHaskell", "https://ucsd-progsys.github.io/liquidhaskell-blog/", Nothing) -- https://github.com/ucsd-progsys/liquidhaskell-blog/issues/4
+  , ("LiquidHaskell", "https://ucsd-progsys.github.io/liquidhaskell-blog/", Just "https://ucsd-progsys.github.io/liquidhaskell-blog/atom.xml")
   , ("Luke Picciau", "https://itscode.red", Just "https://itscode.red/index.xml")
   , ("Mark Karpov", "https://markkarpov.com", Just "https://markkarpov.com/feed.atom")
   , ("Matt Noonan", "http://storm-country.com", Just "http://storm-country.com/rss")
