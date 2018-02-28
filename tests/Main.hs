@@ -76,6 +76,9 @@ main = hspec . parallel . describe "Reveille" $ do
 
     describe "toItem" $ do
 
+      feedUrl <- case toUrl "http://example.com" of
+        Left urlError -> fail (show urlError)
+        Right url -> pure url
       let
         entry = Atom.Entry
           { Atom.entryId = Text.empty
@@ -110,24 +113,16 @@ main = hspec . parallel . describe "Reveille" $ do
         time = Text.pack "Wed, 21 Feb 18 08:59:52 EST"
 
       it "fails with an empty name" $ do
-        toItem (Feed.AtomItem entry)
+        toItem feedUrl (Feed.AtomItem entry)
           `shouldBe` Left (ItemErrorBadName NameErrorEmpty)
 
       it "fails with no URL" $ do
-        toItem (Feed.AtomItem entry { Atom.entryTitle = title })
+        toItem feedUrl (Feed.AtomItem entry { Atom.entryTitle = title })
           `shouldBe` Left ItemErrorNoUrl
-
-      it "fails with an empty URL" $ do
-        toItem
-            (Feed.AtomItem entry
-              { Atom.entryTitle = title
-              , Atom.entryLinks = [link]
-              }
-            )
-          `shouldBe` Left (ItemErrorBadUrl UrlErrorEmpty)
 
       it "fails with an invalid time" $ do
         toItem
+            feedUrl
             (Feed.AtomItem entry
               { Atom.entryTitle = title
               , Atom.entryLinks = [link { Atom.linkHref = url }]
@@ -137,6 +132,7 @@ main = hspec . parallel . describe "Reveille" $ do
 
       it "succeeds" $ do
         toItem
+            feedUrl
             (Feed.AtomItem entry
               { Atom.entryTitle = title
               , Atom.entryLinks = [link { Atom.linkHref = url }]
