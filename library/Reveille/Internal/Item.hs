@@ -1,5 +1,7 @@
 module Reveille.Internal.Item where
 
+import qualified Data.Monoid as Monoid
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Time as Time
 import qualified Network.URI as Uri
@@ -34,14 +36,29 @@ toItem feedUrl feedItem = do
               Right (Url.Url (Uri.relativeTo path (Url.unwrapUrl feedUrl)))
           Right url -> Right url
 
-  time <- case Feed.getItemPublishDate feedItem of
+  time <- case Feed.getItemPublishDateString feedItem of
     Nothing -> Left ItemErrorNoTime
-    Just Nothing -> case Feed.getItemPublishDateString feedItem of
-      Nothing -> Left ItemErrorNoTime
-      Just text -> Left (ItemErrorInvalidTime text)
-    Just (Just time) -> Right time
+    Just text -> case parseTime (Text.unpack text) of
+      Nothing -> Left (ItemErrorInvalidTime text)
+      Just time -> Right time
 
   pure Item {itemName = name, itemUrl = url, itemTime = time}
+
+parseTime :: Time.ParseTime t => String -> Maybe t
+parseTime string = Monoid.getFirst
+  (foldMap (\format -> parseTimeWith format string) timeFormats)
+
+parseTimeWith :: (Monad m, Time.ParseTime t) => String -> String -> m t
+parseTimeWith format string =
+  Time.parseTimeM False Time.defaultTimeLocale format string
+
+timeFormats :: Set.Set String
+timeFormats = Set.fromList
+  [ "%Y-%m-%dT%H:%M:%S%Q%Z"
+  , "%Y-%-m-%dT%H:%M:%S%Q%Z"
+  , "%a, %d %b %Y %H:%M:%S %Z"
+  , "%a, %e %b %Y %H:%M:%S %Z"
+  ]
 
 data ItemError
   = ItemErrorNoName
