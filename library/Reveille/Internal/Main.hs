@@ -86,7 +86,7 @@ rawInitialAuthors =
   , ("Oleg Grenrus", "http://oleg.fi", Just "http://oleg.fi/gists/atom.xml")
   , ("Oskar Wickstr\xf6m", "https://wickstrom.tech", Just "https://wickstrom.tech/feed.xml")
   , ("Patrick Thompson", "http://blog.sumtypeofway.com", Just "http://blog.sumtypeofway.com/rss/")
-  , ("Payton Turnage", "https://paytonturnage.com", Nothing) -- https://github.com/turnage/turnage.github.io/issues/2
+  , ("Payton Turnage", "https://paytonturnage.com", Just "https://paytonturnage.com/feed.xml")
   , ("Raphael Baron", "http://rbaron.net", Nothing) -- Sent email because no GitHub repo.
   , ("Richard Cook", "https://blog.rcook.org", Just "https://blog.rcook.org/atom.xml")
   , ("Roman Cheplyaka", "https://ro-che.info", Just "https://ro-che.info/articles/rss.xml")
