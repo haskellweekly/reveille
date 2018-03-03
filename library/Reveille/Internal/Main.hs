@@ -35,7 +35,7 @@ initialAuthors =
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
--- Includes authors from issues 95 through 87.
+-- Includes authors from issues 96 through 87.
 rawInitialAuthors :: [(String, String, Maybe String)]
 rawInitialAuthors =
   [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
@@ -47,11 +47,13 @@ rawInitialAuthors =
   , ("Blue Dinosaur", "https://blue-dinosaur.github.io", Just "https://blue-dinosaur.github.io/feed.xml")
   , ("Brent Yorgey", "https://byorgey.wordpress.com", Just "https://byorgey.wordpress.com/feed/")
   , ("Chris Martin", "https://chris-martin.org", Just "https://chris-martin.org/rss.xml")
+  , ("Chris Penner", "https://chrispenner.ca", Just "https://chrispenner.ca/atom.xml")
   , ("Codurance", "https://codurance.com", Just "https://codurance.com/atom.xml")
   , ("Concert", "https://medium.com/@concertdaw", Just "https://medium.com/feed/@concertdaw")
   , ("Csongor Kiss", "http://kcsongor.github.io", Just "http://kcsongor.github.io/feed.xml")
   , ("Daniel Bolivar", "https://www.dabolivar.com", Just "https://www.dabolivar.com/index.xml")
   , ("Daniel Patterson", "https://dbp.io", Just "https://dbp.io/rss.xml")
+  , ("Divam", "https://dfordivam.github.io", Nothing) -- https://github.com/dfordivam/dfordivam.github.io/issues/1
   , ("Edward Kmett", "http://comonad.com/reader/", Just "http://comonad.com/reader/feed/")
   , ("Eli Bendersky", "https://eli.thegreenplace.net", Just "https://eli.thegreenplace.net/feeds/all.atom.xml")
   , ("Fintan Halpenny", "https://medium.com/@fintan.halpenny", Just "https://medium.com/feed/@fintan.halpenny")
@@ -64,8 +66,10 @@ rawInitialAuthors =
   , ("Haskell Weekly", "https://haskellweekly.news", Just "https://haskellweekly.news/haskell-weekly.atom")
   , ("Humble Bundle", "https://www.humblebundle.com", Just "http://blog.humblebundle.com/rss")
   , ("Ibnu D. Aji", "https://ibnuda.gitlab.io", Nothing) -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
+  , ("Isaac Elliott", "http://blog.ielliott.io", Just "http://blog.ielliott.io/feed.xml")
   , ("Jan Mas Rovira", "https://janmasrovira.gitlab.io/ascetic-slug/", Just "https://janmasrovira.gitlab.io/ascetic-slug/index.xml")
   , ("Joachim Breitner", "https://www.joachim-breitner.de", Just "https://www.joachim-breitner.de/blog_feed.rss")
+  , ("Joe Vargas", "http://jxv.io", Nothing) -- https://github.com/jxv/jxv.github.io/issues/3
   , ("John Mendon\xe7\&a", "https://mendo.zone", Just "https://mendo.zone/feed.xml")
   , ("Jonathan Merritt", "https://lancelet.github.io", Nothing) -- https://github.com/lancelet/blog-source/issues/1
   , ("Julie Moronuki", "https://argumatronic.com", Just "https://argumatronic.com/rss.xml")
@@ -73,6 +77,7 @@ rawInitialAuthors =
   , ("Jyri-Matti L\xe4hteenm\xe4ki", "https://blog.lahteenmaki.net", Just "https://blog.lahteenmaki.net/rss.xml")
   , ("LiquidHaskell", "https://ucsd-progsys.github.io/liquidhaskell-blog/", Just "https://ucsd-progsys.github.io/liquidhaskell-blog/atom.xml")
   , ("Luke Picciau", "https://itscode.red", Just "https://itscode.red/index.xml")
+  , ("Marcelo Zabani", "https://mzabani.wordpress.com", Just "https://mzabani.wordpress.com/feed")
   , ("Mark Karpov", "https://markkarpov.com", Just "https://markkarpov.com/feed.atom")
   , ("Matt Noonan", "http://storm-country.com", Just "http://storm-country.com/rss")
   , ("Matthew Pickering", "https://mpickering.github.io", Just "https://mpickering.github.io/atom.xml")
@@ -85,7 +90,9 @@ rawInitialAuthors =
   , ("Nuno Alexandre", "https://nunoalexandre.com", Just "https://nunoalexandre.com/feed.xml")
   , ("Oleg Grenrus", "http://oleg.fi", Just "http://oleg.fi/gists/atom.xml")
   , ("Oskar Wickstr\xf6m", "https://wickstrom.tech", Just "https://wickstrom.tech/feed.xml")
+  , ("Parnell Springmeyer", "https://ixmatus.net", Nothing) -- https://twitter.com/taylorfausak/status/969938061525209088
   , ("Patrick Thompson", "http://blog.sumtypeofway.com", Just "http://blog.sumtypeofway.com/rss/")
+  , ("Paul Johnson", "https://paulspontifications.blogspot.com", Just "https://paulspontifications.blogspot.com/feeds/posts/default")
   , ("Payton Turnage", "https://paytonturnage.com", Just "https://paytonturnage.com/feed.xml")
   , ("Raphael Baron", "http://rbaron.net", Nothing) -- Sent email because no GitHub repo.
   , ("Richard Cook", "https://blog.rcook.org", Just "https://blog.rcook.org/atom.xml")
