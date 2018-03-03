@@ -7,6 +7,7 @@ import qualified Control.Monad as Monad
 import qualified Control.Monad.Trans.Class as Trans
 import qualified Control.Monad.Trans.Except as Except
 import qualified Data.ByteString.Lazy as LazyBytes
+import qualified Data.Map as Map
 import qualified Data.Ratio as Ratio
 import qualified Data.Set as Set
 import qualified Data.Void as Void
@@ -33,7 +34,40 @@ startAggregator manager database =
 runAggregator :: Client.Manager -> Stm.TVar Database.Database -> IO ()
 runAggregator manager database = do
   updateAuthors manager database
+  () <- plugSpaceLeak database
   Concurrent.threadDelay (15 * 60 * 1000000)
+
+plugSpaceLeak :: Stm.TVar Database.Database -> IO ()
+plugSpaceLeak database = do
+  db <- Stm.readTVarIO database
+  pure (seqDatabase db ())
+
+seqDatabase :: Database.Database -> unit -> unit
+seqDatabase database unit = seqEntries (Database.unwrapDatabase database) unit
+
+seqEntries :: Map.Map Author.Author (Set.Set Item.Item) -> unit -> unit
+seqEntries entries unit = Map.foldrWithKey
+  (\author items x -> seqAuthor author (seqItems items x))
+  unit
+  entries
+
+seqAuthor :: Author.Author -> unit -> unit
+seqAuthor author unit = seq
+  (Author.authorName author)
+  (seq (Author.authorUrl author) (seqMaybe (Author.authorFeed author) unit))
+
+seqMaybe :: Maybe a -> unit -> unit
+seqMaybe m unit = case m of
+  Nothing -> unit
+  Just x -> seq x unit
+
+seqItems :: Set.Set Item.Item -> unit -> unit
+seqItems items unit = Set.foldr seqItem unit items
+
+seqItem :: Item.Item -> unit -> unit
+seqItem item unit = seq
+  (Item.itemName item)
+  (seq (Item.itemUrl item) (seq (Item.itemTime item) unit))
 
 updateAuthors :: Client.Manager -> Stm.TVar Database.Database -> IO ()
 updateAuthors manager database = do
