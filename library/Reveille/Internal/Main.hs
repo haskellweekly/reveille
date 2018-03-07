@@ -3,6 +3,8 @@ module Reveille.Internal.Main where
 import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.STM as Stm
 import qualified Data.Set as Set
+import qualified Network.Connection as Connection
+import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.TLS as Client
 import qualified Reveille.Internal.Aggregator as Aggregator
 import qualified Reveille.Internal.Author as Author
@@ -11,7 +13,7 @@ import qualified Reveille.Internal.Server as Server
 
 defaultMain :: IO ()
 defaultMain = do
-  manager <- Client.newTlsManager
+  manager <- Client.newManager managerSettings
   database <- Stm.newTVarIO Database.initialDatabase
 
   Stm.atomically (mapM_ (addAuthor database) initialAuthors)
@@ -19,6 +21,16 @@ defaultMain = do
   Async.race_
     (Aggregator.startAggregator manager database)
     (Server.startServer database)
+
+managerSettings :: Client.ManagerSettings
+managerSettings = Client.mkManagerSettings
+  (Connection.TLSSettingsSimple
+    { Connection.settingDisableCertificateValidation = True
+    , Connection.settingDisableSession = False
+    , Connection.settingUseServerName = False
+    }
+  )
+  Nothing
 
 addAuthor
   :: Stm.TVar Database.Database
