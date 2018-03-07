@@ -51,7 +51,7 @@ getIndexHandler database now
           , xmlNode "a" [("href", "feed.atom")] [xmlContent "Atom feed"]
           , xmlContent "."
           ]
-        , xmlNode "ol" [] (map entryToHtml items)
+        , xmlNode "ol" [("class", "entries")] (map entryToHtml items)
         , xmlNode "h2" [] [xmlContent "Authors"]
         , xmlNode
           "p"
@@ -60,7 +60,10 @@ getIndexHandler database now
           , xmlNode "a" [("href", "authors.opml")] [xmlContent "authors OPML"]
           , xmlContent "."
           ]
-        , xmlNode "ul" [] (map authorToHtml (Set.toAscList authors))
+        , xmlNode
+          "ul"
+          [("class", "authors")]
+          (map authorToHtml (Set.toAscList authors))
         ]
       html = xmlElement
         "html"
@@ -73,29 +76,47 @@ getIndexHandler database now
 entryToHtml :: Entry.Entry -> Xml.Node
 entryToHtml entry = xmlNode
   "li"
-  []
+  [("class", "entry")]
   [ xmlNode
     "a"
-    [("href", Url.fromUrl (Item.itemUrl (Entry.entryItem entry)))]
+    [ ("class", "entry-name")
+    , ("href", Url.fromUrl (Item.itemUrl (Entry.entryItem entry)))
+    ]
     [xmlContent (Name.fromName (Item.itemName (Entry.entryItem entry)))]
   , xmlContent " by "
-  , xmlContent (Name.fromName (Author.authorName (Entry.entryAuthor entry)))
+  , xmlNode
+    "span"
+    [("class", "entry-author")]
+    [xmlContent (Name.fromName (Author.authorName (Entry.entryAuthor entry)))]
   , xmlContent " on "
-  , xmlContent
-    (Time.formatTime
-      Time.defaultTimeLocale
-      "%B %-e"
-      (Item.itemTime (Entry.entryItem entry))
-    )
+  , xmlNode
+    "time"
+    [ ("class", "entry-time")
+    , ( "datetime"
+      , Time.formatTime
+        Time.defaultTimeLocale
+        "%Y-%m-%dT%H:%M:%SZ"
+        (Item.itemTime (Entry.entryItem entry))
+      )
+    ]
+    [ xmlContent
+        (Time.formatTime
+          Time.defaultTimeLocale
+          "%B %-e"
+          (Item.itemTime (Entry.entryItem entry))
+        )
+    ]
   ]
 
 authorToHtml :: Author.Author -> Xml.Node
 authorToHtml author = xmlNode
   "li"
-  []
+  [("class", "author")]
   [ xmlNode
       "a"
-      [("href", Url.fromUrl (Author.authorUrl author))]
+      [ ("class", "author-name")
+      , ("href", Url.fromUrl (Author.authorUrl author))
+      ]
       [xmlContent (Name.fromName (Author.authorName author))]
   ]
 
