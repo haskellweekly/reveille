@@ -116,10 +116,6 @@ main = hspec . parallel . describe "Reveille" $ do
         toItem feedUrl (Feed.AtomItem entry)
           `shouldBe` Left (ItemErrorBadName NameErrorEmpty)
 
-      it "fails with no URL" $ do
-        toItem feedUrl (Feed.AtomItem entry { Atom.entryTitle = title })
-          `shouldBe` Left ItemErrorNoUrl
-
       it "fails with an invalid time" $ do
         toItem
             feedUrl
