@@ -167,11 +167,6 @@ fetchAuthorEntriesT performRequest author = do
 toExceptT :: Monad m => Either e a -> Except.ExceptT e m a
 toExceptT = either Except.throwE pure
 
-fromRight :: (Show l, Monad m) => Either l r -> m r
-fromRight e = case e of
-  Left l -> fail (show l)
-  Right r -> pure r
-
 data AggregatorError
   = AggregatorErrorNoFeed
   | AggregatorErrorInvalidUrl Url.Url
@@ -188,11 +183,14 @@ parseUrl :: Url.Url -> Either AggregatorError Client.Request
 parseUrl url = case Client.parseRequest (Url.fromUrl url) of
   Nothing -> Left (AggregatorErrorInvalidUrl url)
   Just request -> Right request
-    { Client.requestHeaders = [(Http.hUserAgent, Unicode.toUtf8 userAgent)]
+    { Client.requestHeaders =
+      [ (Http.hAccept, Unicode.toUtf8 "*/*")
+      , (Http.hUserAgent, Unicode.toUtf8 userAgent)
+      ]
     }
 
 userAgent :: String
-userAgent = "reveille-" ++ Version.versionString
+userAgent = "reveille/" ++ Version.versionString
 
 parseFeed :: LazyBytes.ByteString -> Either AggregatorError Feed.Feed
 parseFeed body = case Feed.parseFeedSource body of
