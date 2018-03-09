@@ -24,17 +24,17 @@ toItem feedUrl feedItem = do
       Left nameError -> Left (ItemErrorBadName nameError)
       Right name -> Right name
 
-  url <- case Feed.getItemLink feedItem of
-    Nothing -> Left ItemErrorNoUrl
-    Just linkText ->
-      let link = Text.unpack linkText
-      in
-        case Url.toUrl link of
-          Left urlError -> case Uri.parseURIReference link of
-            Nothing -> Left (ItemErrorBadUrl urlError)
-            Just path ->
-              Right (Url.Url (Uri.relativeTo path (Url.unwrapUrl feedUrl)))
-          Right url -> Right url
+  rawUrl <- case Feed.getItemLink feedItem of
+    Nothing -> case Feed.getItemId feedItem of
+      Nothing -> Left ItemErrorNoUrl
+      Just (_, id_) -> Right (Text.unpack id_)
+    Just link -> Right (Text.unpack link)
+  url <- case Url.toUrl rawUrl of
+    Left urlError -> case Uri.parseURIReference rawUrl of
+      Nothing -> Left (ItemErrorBadUrl urlError)
+      Just path ->
+        Right (Url.Url (Uri.relativeTo path (Url.unwrapUrl feedUrl)))
+    Right url -> Right url
 
   time <- case Feed.getItemPublishDateString feedItem of
     Nothing -> Left ItemErrorNoTime
