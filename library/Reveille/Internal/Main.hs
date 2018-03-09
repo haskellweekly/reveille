@@ -47,7 +47,7 @@ initialAuthors =
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
--- Includes authors from issues 96 through 80.
+-- Includes authors from issues 97 through 80.
 rawInitialAuthors :: [(String, String, Maybe String)]
 rawInitialAuthors =
   [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
@@ -66,6 +66,7 @@ rawInitialAuthors =
   , ("Chris Penner", "https://chrispenner.ca", Just "https://chrispenner.ca/atom.xml")
   , ("Chris Warburton", "http://chriswarbo.net", Just "http://chriswarbo.net/blog.atom")
   , ("Codurance", "https://codurance.com", Just "https://codurance.com/atom.xml")
+  , ("Colin Woodbury", "http://fosskers.ca", Just "http://fosskers.ca/rss-en")
   , ("Concert", "https://medium.com/@concertdaw", Just "https://medium.com/feed/@concertdaw")
   , ("Csongor Kiss", "http://kcsongor.github.io", Just "http://kcsongor.github.io/feed.xml")
   , ("Dan Oprescu", "https://trandi.wordpress.com", Just "https://trandi.wordpress.com/feed/")
@@ -78,6 +79,7 @@ rawInitialAuthors =
   , ("F\xe9lix Baylac-Jacqu\xe9", "https://alternativebit.fr", Just "https://alternativebit.fr/posts/index.xml")
   , ("Fintan Halpenny", "https://medium.com/@fintan.halpenny", Just "https://medium.com/feed/@fintan.halpenny")
   , ("FP Complete", "https://www.fpcomplete.com", Just "https://www.fpcomplete.com/blog/atom.xml")
+  , ("Front Row", "http://tech.frontrowed.com", Just "http://tech.frontrowed.com/feed.xml")
   , ("Functional Works", "https://functional.works-hub.com", Nothing) -- https://twitter.com/taylorfausak/status/971367969510092800
   , ("Gabriel Gonzalez", "http://www.haskellforall.com", Just "http://www.haskellforall.com/feeds/posts/default")
   , ("Getty Ritter", "https://blog.infinitenegativeutility.com", Just "https://blog.infinitenegativeutility.com/rss")
@@ -101,10 +103,12 @@ rawInitialAuthors =
   , ("Julie Moronuki", "https://argumatronic.com", Just "https://argumatronic.com/rss.xml")
   , ("Justin Le", "https://blog.jle.im", Just "http://feeds.feedburner.com/incodeblog")
   , ("Jyri-Matti L\xe4hteenm\xe4ki", "https://blog.lahteenmaki.net", Just "https://blog.lahteenmaki.net/rss.xml")
+  , ("Laurence Emms", "https://whatthefunctional.wordpress.com", Just "https://whatthefunctional.wordpress.com/feed/")
   , ("LiquidHaskell", "https://ucsd-progsys.github.io/liquidhaskell-blog/", Just "https://ucsd-progsys.github.io/liquidhaskell-blog/atom.xml")
   , ("Luke Picciau", "https://itscode.red", Just "https://itscode.red/index.xml")
   , ("Marcelo Zabani", "https://mzabani.wordpress.com", Just "https://mzabani.wordpress.com/feed")
   , ("Mark Karpov", "https://markkarpov.com", Just "https://markkarpov.com/feed.atom")
+  , ("Mateusz Kowalczyk", "http://fuuzetsu.co.uk/blog/", Just "http://fuuzetsu.co.uk/blog/atom.xml")
   , ("Matt Noonan", "http://storm-country.com", Just "http://storm-country.com/rss")
   , ("Matt Parsons", "https://www.parsonsmatt.org", Just "https://www.parsonsmatt.org/feed.xml")
   , ("Matthew Pickering", "https://mpickering.github.io", Just "https://mpickering.github.io/atom.xml")
@@ -113,6 +117,7 @@ rawInitialAuthors =
   , ("Mike Ledger", "https://quasimal.com", Just "https://quasimal.com/feed.xml")
   , ("Mistral Contrastin", "https://dodisturb.me", Just "https://dodisturb.me/atom.xml")
   , ("Monday Morning Haskell", "https://mmhaskell.com", Just "https://mmhaskell.com/blog?format=rss")
+  , ("Moritz Kiefer", "https://purelyfunctional.org", Just "https://purelyfunctional.org/atom.xml")
   , ("Nam C.", "https://namc.in", Just "https://namc.in/feed.xml")
   , ("Neil Mitchell", "https://neilmitchell.blogspot.com", Just "https://neilmitchell.blogspot.com/feeds/posts/default")
   , ("Nuno Alexandre", "https://nunoalexandre.com", Just "https://nunoalexandre.com/feed.xml")
@@ -147,6 +152,8 @@ rawInitialAuthors =
   , ("The GHC Blog", "https://ghc.haskell.org/trac/ghc/blog", Just "https://ghc.haskell.org/trac/ghc/blog?format=rss")
   , ("Tom Smalley", "https://tomsmalley.github.io", Nothing) -- Not really a blog.
   , ("Tweag I/O", "https://www.tweag.io", Just "https://www.tweag.io/rss.xml")
+  , ("Uver Engineering", "https://eng.uber.com", Just "https://eng.uber.com/feed/")
   , ("Vaibhav Sagar", "http://vaibhavsagar.com", Just "http://vaibhavsagar.com/atom.xml")
+  , ("Well-Typed", "https://www.well-typed.com", Nothing) -- https://twitter.com/taylorfausak/status/972087304067207168
   , ("Zw3rk Tech", "https://medium.com/@zw3rk", Just "https://medium.com/feed/@zw3rk")
   ]

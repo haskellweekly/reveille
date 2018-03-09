@@ -58,6 +58,7 @@ timeFormats = Set.fromList
   , "%Y-%-m-%dT%H:%M:%S%Q%Z"
   , "%a, %d %b %Y %H:%M:%S %Z"
   , "%a, %e %b %Y %H:%M:%S %Z"
+  , "%Y-%m-%d"
   ]
 
 data ItemError
