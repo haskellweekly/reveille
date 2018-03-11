@@ -7,6 +7,7 @@ import qualified Control.Monad as Monad
 import qualified Control.Monad.Trans.Class as Trans
 import qualified Control.Monad.Trans.Except as Except
 import qualified Data.ByteString.Lazy as LazyBytes
+import qualified Data.Either as Either
 import qualified Data.Map as Map
 import qualified Data.Ratio as Ratio
 import qualified Data.Set as Set
@@ -70,9 +71,12 @@ seqItem item unit = seq
 
 updateAuthors :: Client.Manager -> Stm.TVar Database.Database -> IO ()
 updateAuthors manager database = do
-  putStrLn "Updating feeds ..."
   db <- Stm.readTVarIO database
   let authors = Database.getDatabaseAuthors db
+  Printf.printf
+    "Updating %d feed%s ...\n"
+    (Set.size authors)
+    (pluralize authors)
   ((), elapsed) <- timed (mapM_ (updateAuthor manager database) authors)
   Printf.printf
     "Updated %d feed%s in %.1f seconds.\n"
@@ -106,23 +110,44 @@ updateAuthor
 updateAuthor manager database author = do
   result <- fetchAuthorEntries (safeHttpLbs manager) author
   case result of
-    Left aggregatorError -> Printf.printf
-      "%s: %s\n"
-      (Name.fromName (Author.authorName author))
-      (show aggregatorError)
-    Right itemResults -> mapM_
-      (\itemResult -> case itemResult of
-        Left itemError -> Printf.printf
-          "%s: %s\n"
-          (Name.fromName (Author.authorName author))
-          (show itemError)
-        Right item -> Stm.atomically
-          (Stm.modifyTVar
-            database
-            (Database.addDatabaseItems author (Set.singleton item))
-          )
-      )
-      itemResults
+    Left aggregatorError -> printAggregatorError author aggregatorError
+    Right itemResults -> do
+      let (itemErrors, items) = Either.partitionEithers itemResults
+      mapM_ (printItemError author) itemErrors
+      newItems <- Stm.atomically (insertItems database author items)
+      printNewItems author newItems
+
+printAggregatorError :: Author.Author -> AggregatorError -> IO ()
+printAggregatorError author aggregatorError = Printf.printf
+  "ERROR %s (%s)\n"
+  (show aggregatorError)
+  (Name.fromName (Author.authorName author))
+
+printItemError :: Author.Author -> Item.ItemError -> IO ()
+printItemError author itemError = Printf.printf
+  "ERROR %s (%s)\n"
+  (show itemError)
+  (Name.fromName (Author.authorName author))
+
+insertItems
+  :: Stm.TVar Database.Database
+  -> Author.Author
+  -> [Item.Item]
+  -> Stm.STM (Set.Set Item.Item)
+insertItems database author items = do
+  db <- Stm.readTVar database
+  let oldItems = Database.getDatabaseItems author db
+  let newDb = Database.addDatabaseItems author (Set.fromList items) db
+  let newItems = Database.getDatabaseItems author newDb
+  Stm.writeTVar database newDb
+  pure (Set.difference newItems oldItems)
+
+printNewItems :: Author.Author -> Set.Set Item.Item -> IO ()
+printNewItems author items = Printf.printf
+  "%d new item%s from %s\n"
+  (Set.size items)
+  (pluralize items)
+  (Name.fromName (Author.authorName author))
 
 type Response = Client.Response LazyBytes.ByteString
 

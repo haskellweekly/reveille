@@ -35,3 +35,7 @@ getDatabaseAuthors database = Map.keysSet (unwrapDatabase database)
 getDatabaseEntries :: Database -> Set.Set Entry.Entry
 getDatabaseEntries database = Set.unions
   (map (uncurry Entry.toEntrySet) (Map.toList (unwrapDatabase database)))
+
+getDatabaseItems :: Author.Author -> Database -> Set.Set Item.Item
+getDatabaseItems author database =
+  Map.findWithDefault Set.empty author (unwrapDatabase database)
