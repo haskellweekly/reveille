@@ -108,7 +108,7 @@ rawInitialAuthors =
   , ("J Haigh", "https://debugsteven.github.io", Just "https://debugsteven.github.io/feed.xml")
   , ("Jan Mas Rovira", "https://janmasrovira.gitlab.io/ascetic-slug/", Just "https://janmasrovira.gitlab.io/ascetic-slug/index.xml")
   , ("Jared Weakly", "https://jaredweakly.com", Just "https://jaredweakly.com/feed/")
-  , ("Jaro Reinders", "https://noughtmare.gitlab.io", Nothing) -- Sent an email.
+  , ("Jaro Reinders", "https://noughtmare.gitlab.io", Just "https://noughtmare.gitlab.io/atom.xml")
   , ("Javascript to Elm", "http://jstoelm.com", Just "https://jstoelm.libsyn.com/rss")
   , ("Jean-Louis Giordano", "https://jawaninja.com", Just "https://jawaninja.com/atom.xml")
   , ("Joachim Breitner", "https://www.joachim-breitner.de", Just "https://www.joachim-breitner.de/blog_feed.rss")
