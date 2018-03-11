@@ -215,7 +215,7 @@ rawInitialAuthors =
   , ("Tommaso Piazza", "http://allocinit.io", Just "http://allocinit.io/feed.xml")
   , ("Tweag I/O", "https://www.tweag.io", Just "https://www.tweag.io/rss.xml")
   , ("Twilio", "https://www.twilio.com/blog/", Just "https://www.twilio.com/blog/feed")
-  , ("Uver Engineering", "https://eng.uber.com", Just "https://eng.uber.com/feed/")
+  , ("Uber Engineering", "https://eng.uber.com", Just "https://eng.uber.com/feed/")
   , ("Vados", "https://vadosware.io", Just "https://vadosware.io/index.xml")
   , ("Vaibhav Sagar", "http://vaibhavsagar.com", Just "http://vaibhavsagar.com/atom.xml")
   , ("Vasantha Ganesh Kanniappan", "https://blog.hustlr.in/", Nothing) -- https://gitlab.com/vasanthaganeshk/hustlr-in/issues/4
