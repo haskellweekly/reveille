@@ -283,18 +283,18 @@ rawInitialAuthors =
   , ("Edsko de Vries", "http://edsko.net", Nothing) -- https://twitter.com/taylorfausak/status/973198287418417152
   , ("Elm", "http://elm-lang.org/blog", Nothing) -- https://github.com/elm-lang/elm-lang.org/issues/630
   , ("Functional Works", "https://functional.works-hub.com", Nothing) -- https://twitter.com/taylorfausak/status/971367969510092800
-  , ("Gustav Behm", "https://rootmos.github.io", Nothing) -- Sent an email.
+  , ("Gustav Behm", "https://rootmos.github.io", Nothing) -- email
   , ("Haskell Serbia", "https://haskell-serbia.com", Nothing) -- https://github.com/haskell-serbia/haskell-serbia/issues/27
   , ("Ibnu D. Aji", "https://ibnuda.gitlab.io", Nothing) -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
   , ("James Haver II", "http://www.mchaver.com", Nothing) -- https://github.com/mchaver/mchaver.com/issues/2
   , ("Jeremy Mikkola", "http://jeremymikkola.com", Nothing) -- https://twitter.com/taylorfausak/status/972870791808405504
   , ("Jonathan Merritt", "https://lancelet.github.io", Nothing) -- https://github.com/lancelet/blog-source/issues/1
   , ("JosephCieslik", "https://torchhound.github.io", Nothing) -- https://github.com/torchhound/torchhound.github.io/issues/2
-  , ("Lorepub", "https://lorepub.com", Nothing) -- Sent a Slack message.
+  , ("Lorepub", "https://lorepub.com", Nothing) -- Slack
   , ("Peter Seibel", "http://www.gigamonkeys.com", Nothing) -- https://twitter.com/taylorfausak/status/973176558797185024
-  , ("Philip Cunningham", "https://filib.io", Nothing) -- Sent an email.
+  , ("Philip Cunningham", "https://filib.io", Nothing) -- email
   , ("Philip Nilsson", "https://philipnilsson.github.io/Badness10k/", Nothing) -- https://github.com/philipnilsson/Badness10k/issues/4
-  , ("Raphael Baron", "http://rbaron.net", Nothing) -- Sent email because no GitHub repo.
+  , ("Raphael Baron", "http://rbaron.net", Nothing) -- email
   , ("Renzo Carbonara", "https://ren.zone", Nothing) -- https://github.com/k0001/k0001.github.com/issues/1
   , ("Siddharth Bhat", "https://pixel-druid.com", Nothing) -- https://github.com/bollu/pixeldruid/issues/1
   , ("Vasantha Ganesh Kanniappan", "https://blog.hustlr.in", Nothing) -- https://gitlab.com/vasanthaganeshk/hustlr-in/issues/4
