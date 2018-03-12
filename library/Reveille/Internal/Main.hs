@@ -10,9 +10,11 @@ import qualified Reveille.Internal.Aggregator as Aggregator
 import qualified Reveille.Internal.Author as Author
 import qualified Reveille.Internal.Database as Database
 import qualified Reveille.Internal.Server as Server
+import qualified System.IO as IO
 
 defaultMain :: IO ()
 defaultMain = do
+  IO.hSetEncoding IO.stdout IO.utf8
   manager <- Client.newManager managerSettings
   database <- Stm.newTVarIO Database.initialDatabase
 
