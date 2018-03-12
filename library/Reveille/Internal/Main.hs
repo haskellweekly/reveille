@@ -65,7 +65,7 @@ rawInitialAuthors =
   , ("Benjamin Kovach", "https://www.kovach.me", Just "https://www.kovach.me/atom.xml")
   , ("Blue Dinosaur", "https://blue-dinosaur.github.io", Just "https://blue-dinosaur.github.io/feed.xml")
   , ("Brent Yorgey", "https://byorgey.wordpress.com", Just "https://byorgey.wordpress.com/feed/")
-  , ("Brian McKenna", "https://brianmckenna.org/blog/", Nothing) -- Sent an email.
+  , ("Brian McKenna", "https://brianmckenna.org/blog/", Just "https://brianmckenna.org/blog/feed")
   , ("Capital Match Tech Blog", "https://tech-blog.capital-match.com", Just "https://tech-blog.capital-match.com/feed.rss")
   , ("Carlos Morera", "https://carlosmchica.github.io", Just "https://carlosmchica.github.io/feed.xml")
   , ("Channable", "https://tech.channable.com", Just "https://tech.channable.com/atom.xml")
