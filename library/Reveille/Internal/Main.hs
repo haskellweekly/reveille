@@ -47,7 +47,7 @@ initialAuthors =
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
--- Includes authors from issues 97 through 10.
+-- Includes authors from issues up to and including 97..
 rawInitialAuthors :: [(String, String, Maybe String)]
 rawInitialAuthors =
   [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
@@ -76,12 +76,14 @@ rawInitialAuthors =
   , ("Capital Match Tech Blog", "https://tech-blog.capital-match.com", Just "https://tech-blog.capital-match.com/feed.rss")
   , ("Carl Baatz", "http://baatz.io", Just "http://baatz.io/atom.xml")
   , ("Carlos Morera", "https://carlosmchica.github.io", Just "https://carlosmchica.github.io/feed.xml")
+  , ("Chad Austin", "https://chadaustin.me", Just "http://feeds2.feedburner.com/chadaustin")
   , ("Channable", "https://tech.channable.com", Just "https://tech.channable.com/atom.xml")
   , ("Chris Allen", "http://bitemyapp.com", Just "http://bitemyapp.com/atom.xml")
   , ("Chris Done", "https://chrisdone.com", Just "https://chrisdone.com/rss.xml")
   , ("Chris Ford", "https://literateprogrammer.blogspot.com", Just "https://literateprogrammer.blogspot.com/feeds/posts/default")
   , ("Chris Martin", "https://chris-martin.org", Just "https://chris-martin.org/rss.xml")
   , ("Chris Penner", "https://chrispenner.ca", Just "https://chrispenner.ca/atom.xml")
+  , ("Chris Smith", "https://cdsmith.wordpress.com", Just "https://cdsmith.wordpress.com/feed/")
   , ("Chris Warburton", "http://chriswarbo.net", Just "http://chriswarbo.net/blog.atom")
   , ("Chris", "https://two-wrongs.com", Just "https://two-wrongs.com/feed.xml")
   , ("Christian Charukiewicz", "https://charukiewi.cz", Just "https://charukiewi.cz/atom.xml")
@@ -91,6 +93,7 @@ rawInitialAuthors =
   , ("Colin Woodbury", "http://fosskers.ca", Just "http://fosskers.ca/rss-en")
   , ("Concert", "https://medium.com/@concertdaw", Just "https://medium.com/feed/@concertdaw")
   , ("Csongor Kiss", "http://kcsongor.github.io", Just "http://kcsongor.github.io/feed.xml")
+  , ("Dan Burton", "https://unknownparallel.wordpress.com", Just "https://unknownparallel.wordpress.com/feed/")
   , ("Dan Oprescu", "https://trandi.wordpress.com", Just "https://trandi.wordpress.com/feed/")
   , ("Daniel Bolivar", "https://www.dabolivar.com", Just "https://www.dabolivar.com/index.xml")
   , ("Daniel Patterson", "https://dbp.io", Just "https://dbp.io/rss.xml")
@@ -102,6 +105,7 @@ rawInitialAuthors =
   , ("Dennis Felsing", "https://hookrace.net/", Just "https://hookrace.net/blog/feed/")
   , ("Dennis Gosnell", "https://functor.tokyo", Just "https://functor.tokyo/blog/feed")
   , ("Divam", "https://dfordivam.github.io", Nothing) -- https://github.com/dfordivam/dfordivam.github.io/issues/1
+  , ("Echo Nolan", "http://www.echonolan.net", Just "http://www.echonolan.net/atom.xml")
   , ("Edsko de Vries", "http://edsko.net", Nothing) -- https://twitter.com/taylorfausak/status/973198287418417152
   , ("Edvard H\xfc\&binette", "https://m0ar.github.io/safe-streaming/", Just "https://m0ar.github.io/safe-streaming/feed.xml")
   , ("Edward Kmett", "http://comonad.com/reader/", Just "http://comonad.com/reader/feed/")
@@ -144,6 +148,7 @@ rawInitialAuthors =
   , ("Isaac Shapira", "http://mutanatum.com", Just "http://mutanatum.com/atom.xml")
   , ("Ismail S", "https://blog.ismail-s.com", Just "https://blog.ismail-s.com/index.xml")
   , ("J Haigh", "https://debugsteven.github.io", Just "https://debugsteven.github.io/feed.xml")
+  , ("Jacob Errington", "https://jerrington.me", Just "https://jerrington.me/atom.xml")
   , ("James Haver II", "http://www.mchaver.com", Nothing) -- https://github.com/mchaver/mchaver.com/issues/2
   , ("Jan Mas Rovira", "https://janmasrovira.gitlab.io/ascetic-slug/", Just "https://janmasrovira.gitlab.io/ascetic-slug/index.xml")
   , ("Jared Weakly", "https://jaredweakly.com", Just "https://jaredweakly.com/feed/")
@@ -196,6 +201,7 @@ rawInitialAuthors =
   , ("Michael Burge", "http://www.michaelburge.us", Just "http://www.michaelburge.us/feed.xml")
   , ("Michael Gattozzi", "https://mgattozzi.com", Just "https://mgattozzi.com/feed")
   , ("Michael Snoyman", "https://www.snoyman.com", Just "https://www.snoyman.com/feed")
+  , ("Michael Xavier", "https://michaelxavier.net", Just "https://michaelxavier.net/rss.xml")
   , ("Microsoft Research Podcast", "https://www.microsoft.com/en-us/research/blog/category/podcast/", Just "https://www.microsoft.com/en-us/research/blog/category/podcast/feed/")
   , ("Mike Ledger", "https://quasimal.com", Just "https://quasimal.com/feed.xml")
   , ("Mikhail Glushenkov", "http://coldwa.st/e/", Just "http://feeds.feedburner.com/ChurningAndChurning")
@@ -216,6 +222,7 @@ rawInitialAuthors =
   , ("Oskar Wickstr\xf6m", "https://wickstrom.tech", Just "https://wickstrom.tech/feed.xml")
   , ("Parnell Springmeyer", "https://ixmatus.net", Just "https://ixmatus.net/atom.xml")
   , ("Patrick Thompson", "http://blog.sumtypeofway.com", Just "http://blog.sumtypeofway.com/rss/")
+  , ("Paul Bone", "https://paul.bone.id.au", Just "http://paul.bone.id.au/blog.xml")
   , ("Paul Chiusano", "https://pchiusano.github.io", Just "https://pchiusano.github.io/feed.xml")
   , ("Paul Johnson", "https://paulspontifications.blogspot.com", Just "https://paulspontifications.blogspot.com/feeds/posts/default")
   , ("Payton Turnage", "https://paytonturnage.com", Just "https://paytonturnage.com/feed.xml")
@@ -227,6 +234,7 @@ rawInitialAuthors =
   , ("Philipp Maier", "https://blog.akii.de", Just "https://blog.akii.de/feed.atom")
   , ("Philipp Schuster", "https://haskellexists.blogspot.com", Just "https://haskellexists.blogspot.com/feeds/posts/default")
   , ("Piyush P. Kurur", "https://cse.iitk.ac.in/users/ppk/", Just "https://cse.iitk.ac.in/users/ppk/posts/feeds/atom.xml")
+  , ("Programming Research Laboratory", "https://prl.ccs.neu.edu/blog/", Just "https://prl.ccs.neu.edu/blog/feeds/all.atom.xml")
   , ("Pusher", "https://making.pusher.com", Just "https://making.pusher.com/feed.xml")
   , ("Queensland Functional Programming Lab", "https://qfpl.io", Just "https://qfpl.io/atom.xml")
   , ("Quentin Duval", "https://deque.blog", Just "https://deque.blog/feed/")
@@ -281,6 +289,7 @@ rawInitialAuthors =
   , ("Tobias Dammers", "https://programming.tobiasdammers.nl", Just "https://programming.tobiasdammers.nl/blog/rss")
   , ("Tom Prior", "http://www.prigrammer.com", Just "http://www.prigrammer.com/?feed=rss2")
   , ("Tom Smalley", "https://tomsmalley.github.io", Nothing) -- Not really a blog.
+  , ("Tomas Petricek", "http://tomasp.net", Just "http://tomasp.net/rss.xml")
   , ("Tommaso Piazza", "http://allocinit.io", Just "http://allocinit.io/feed.xml")
   , ("Tweag I/O", "https://www.tweag.io", Just "https://www.tweag.io/rss.xml")
   , ("Twilio", "https://www.twilio.com/blog/", Just "https://www.twilio.com/blog/feed")
