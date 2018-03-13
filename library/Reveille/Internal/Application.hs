@@ -24,6 +24,7 @@ routeRequest request database now =
     ("GET", ["authors.opml"]) -> Handler.getAuthorsHandler database
     ("GET", ["favicon.ico"]) -> Handler.getFaviconHandler
     ("GET", ["feed.atom"]) -> Handler.getFeedAtomHandler database now
+    ("GET", ["feed.json"]) -> Handler.getFeedJsonHandler database now
     ("GET", ["feed.rss"]) -> Handler.getFeedRssHandler database now
     ("GET", ["health-check.xml"]) -> Handler.getHealthCheckHandler
     ("GET", ["robots.txt"]) -> Handler.getRobotsHandler

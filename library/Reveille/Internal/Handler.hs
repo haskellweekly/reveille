@@ -1,5 +1,6 @@
 module Reveille.Internal.Handler where
 
+import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -8,7 +9,9 @@ import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Time as Time
+import qualified JsonFeed
 import qualified Network.HTTP.Types as Http
+import qualified Network.URI as Uri
 import qualified Network.Wai as Wai
 import qualified Reveille.Internal.Author as Author
 import qualified Reveille.Internal.Database as Database
@@ -150,8 +153,8 @@ getFaviconHandler = Wai.responseLBS Http.ok200 [] Favicon.favicon
 getFeedAtomHandler :: Database.Database -> Time.UTCTime -> Wai.Response
 getFeedAtomHandler database now
   = let
-      title = xmlNode "title" [] [xmlContent "Haskell Weekly"]
-      id_ = xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
+      title = xmlNode "title" [] [xmlContent "Reveille"]
+      id_ = xmlNode "id" [] [xmlContent rootUrl]
       updated = xmlNode "updated" [] [xmlContent (rfc3339 now)]
       link =
         xmlNode "link" [("rel", "self"), ("href", rootUrl ++ "/feed.atom")] []
@@ -167,14 +170,91 @@ getFeedAtomHandler database now
       [contentType "application/atom+xml"]
       (Xml.renderLBS Xml.def document)
 
+getFeedJsonHandler :: Database.Database -> Time.UTCTime -> Wai.Response
+getFeedJsonHandler database now = let
+  status = Http.ok200
+  headers = [contentType "application/json"]
+  items = map toJsonFeedItem (getRecentDatabaseEntries database now)
+  feed = defaultJsonFeed
+    { JsonFeed.feedFeedUrl = Just (unsafeToJsonFeedUrl (rootUrl ++ "feed.json"))
+    , JsonFeed.feedHomePageUrl = Just (unsafeToJsonFeedUrl rootUrl)
+    , JsonFeed.feedItems = items
+    , JsonFeed.feedTitle = Text.pack "Reveille"
+    }
+  body = JsonFeed.renderFeed feed
+  in Wai.responseLBS status headers body
+
+unsafeToJsonFeedUrl :: String -> JsonFeed.Url
+unsafeToJsonFeedUrl = JsonFeed.Url . Maybe.fromJust . Uri.parseAbsoluteURI
+
+toJsonFeedAuthor :: Author.Author -> JsonFeed.Author
+toJsonFeedAuthor author = defaultJsonFeedAuthor
+  { JsonFeed.authorName = Just (Name.unwrapName (Author.authorName author))
+  , JsonFeed.authorUrl = Just (unsafeToJsonFeedUrl (Url.fromUrl (Author.authorUrl author)))
+  }
+
+defaultJsonFeedAuthor :: JsonFeed.Author
+defaultJsonFeedAuthor = JsonFeed.Author
+  { JsonFeed.authorAvatar = Nothing
+  , JsonFeed.authorName = Nothing
+  , JsonFeed.authorUrl = Nothing
+  }
+
+toJsonFeedItem :: Entry.Entry -> JsonFeed.Item
+toJsonFeedItem entry = let
+  author = Entry.entryAuthor entry
+  item = Entry.entryItem entry
+  in defaultJsonFeedItem
+    { JsonFeed.itemAuthor = Just (toJsonFeedAuthor author)
+    , JsonFeed.itemDatePublished = Just (Item.itemTime item)
+    , JsonFeed.itemId = Aeson.String (Text.pack (Url.fromUrl (Item.itemUrl item)))
+    , JsonFeed.itemTitle = Just (Name.unwrapName (Item.itemName item))
+    , JsonFeed.itemUrl = Just (unsafeToJsonFeedUrl (Url.fromUrl (Item.itemUrl item)))
+    }
+
+defaultJsonFeedItem :: JsonFeed.Item
+defaultJsonFeedItem = JsonFeed.Item
+  { JsonFeed.itemAttachments = Nothing
+  , JsonFeed.itemAuthor = Nothing
+  , JsonFeed.itemBannerImage = Nothing
+  , JsonFeed.itemContentHtml = Nothing
+  , JsonFeed.itemContentText = Nothing
+  , JsonFeed.itemDateModified = Nothing
+  , JsonFeed.itemDatePublished = Nothing
+  , JsonFeed.itemExternalUrl = Nothing
+  , JsonFeed.itemId = Aeson.Null
+  , JsonFeed.itemImage = Nothing
+  , JsonFeed.itemSummary = Nothing
+  , JsonFeed.itemTags = Nothing
+  , JsonFeed.itemTitle = Nothing
+  , JsonFeed.itemUrl = Nothing
+  }
+
+defaultJsonFeed :: JsonFeed.Feed
+defaultJsonFeed = JsonFeed.Feed
+  { JsonFeed.feedAuthor = Nothing
+  , JsonFeed.feedDescription = Nothing
+  , JsonFeed.feedExpired = Nothing
+  , JsonFeed.feedFavicon = Nothing
+  , JsonFeed.feedFeedUrl = Nothing
+  , JsonFeed.feedHomePageUrl = Nothing
+  , JsonFeed.feedHubs = Nothing
+  , JsonFeed.feedIcon = Nothing
+  , JsonFeed.feedItems = []
+  , JsonFeed.feedNextUrl = Nothing
+  , JsonFeed.feedTitle = Text.empty
+  , JsonFeed.feedUserComment = Nothing
+  , JsonFeed.feedVersion = unsafeToJsonFeedUrl "https://jsonfeed.org/version/1"
+  }
+
 getFeedRssHandler :: Database.Database -> Time.UTCTime -> Wai.Response
 getFeedRssHandler database now = let
   status = Http.ok200
   headers = [contentType "application/rss+xml"]
   items = map entryToRss (getRecentDatabaseEntries database now)
-  title = xmlNode "title" [] [xmlContent "Haskell Weekly"]
+  title = xmlNode "title" [] [xmlContent "Reveille"]
   description = xmlNode "description" [] []
-  link = xmlNode "link" [] [xmlContent "https://haskellweekly.news/"]
+  link = xmlNode "link" [] [xmlContent rootUrl]
   channel = xmlNode "channel" [] (title : description : link : items)
   rss = xmlElement "rss" [("version", "2.0")] [channel]
   document = xmlDocument rss
@@ -192,7 +272,7 @@ rfc822 :: Time.UTCTime -> String
 rfc822 time = Time.formatTime Time.defaultTimeLocale "%a, %d %b %Y %H:%M:%S %Z" time
 
 rootUrl :: String
-rootUrl = "https://reveille.haskellweekly.news"
+rootUrl = "https://reveille.haskellweekly.news/"
 
 getHealthCheckHandler :: Wai.Response
 getHealthCheckHandler = Wai.responseLBS

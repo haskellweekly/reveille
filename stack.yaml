@@ -1,1 +1,4 @@
 resolver: lts-10.0
+
+extra-deps:
+  - json-feed-1.0.0
