@@ -147,8 +147,8 @@ getAuthorsHandler database =
 getFaviconHandler :: Wai.Response
 getFaviconHandler = Wai.responseLBS Http.ok200 [] Favicon.favicon
 
-getFeedHandler :: Database.Database -> Time.UTCTime -> Wai.Response
-getFeedHandler database now
+getFeedAtomHandler :: Database.Database -> Time.UTCTime -> Wai.Response
+getFeedAtomHandler database now
   = let
       title = xmlNode "title" [] [xmlContent "Haskell Weekly"]
       id_ = xmlNode "id" [] [xmlContent "https://haskellweekly.news/"]
@@ -156,7 +156,7 @@ getFeedHandler database now
       link =
         xmlNode "link" [("rel", "self"), ("href", rootUrl ++ "/feed.atom")] []
       items = getRecentDatabaseEntries database now
-      entries = map entryToXml items
+      entries = map entryToAtom items
       feed = xmlElement
         "feed"
         [("xmlns", "http://www.w3.org/2005/Atom")]
@@ -166,6 +166,30 @@ getFeedHandler database now
       Http.ok200
       [contentType "application/atom+xml"]
       (Xml.renderLBS Xml.def document)
+
+getFeedRssHandler :: Database.Database -> Time.UTCTime -> Wai.Response
+getFeedRssHandler database now = let
+  status = Http.ok200
+  headers = [contentType "application/rss+xml"]
+  items = map entryToRss (getRecentDatabaseEntries database now)
+  title = xmlNode "title" [] [xmlContent "Haskell Weekly"]
+  description = xmlNode "description" [] []
+  link = xmlNode "link" [] [xmlContent "https://haskellweekly.news/"]
+  channel = xmlNode "channel" [] (title : description : link : items)
+  rss = xmlElement "rss" [("version", "2.0")] [channel]
+  document = xmlDocument rss
+  body = Xml.renderLBS Xml.def document
+  in Wai.responseLBS status headers body
+
+entryToRss :: Entry.Entry -> Xml.Node
+entryToRss entry = let item = Entry.entryItem entry in xmlNode "item" []
+  [ xmlNode "title" [] [xmlContent (Name.fromName (Item.itemName item))]
+  , xmlNode "guid" [] [xmlContent (Url.fromUrl (Item.itemUrl item))]
+  , xmlNode "pubDate" [] [xmlContent (rfc822 (Item.itemTime item))]
+  ]
+
+rfc822 :: Time.UTCTime -> String
+rfc822 time = Time.formatTime Time.defaultTimeLocale "%a, %d %b %Y %H:%M:%S %Z" time
 
 rootUrl :: String
 rootUrl = "https://reveille.haskellweekly.news"
@@ -216,8 +240,8 @@ rfc3339 :: Time.UTCTime -> String
 rfc3339 time =
   Time.formatTime Time.defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" time
 
-entryToXml :: Entry.Entry -> Xml.Node
-entryToXml entry
+entryToAtom :: Entry.Entry -> Xml.Node
+entryToAtom entry
   = let
       item = Entry.entryItem entry
       author = Entry.entryAuthor entry
