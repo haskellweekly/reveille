@@ -158,6 +158,7 @@ rawInitialAuthors =
   , ("John Mendon\xe7\&a", "https://mendo.zone", Just "https://mendo.zone/feed.xml")
   , ("Jonathan Fischoff", "https://medium.com/@jonathangfischoff", Just "https://medium.com/feed/@jonathangfischoff")
   , ("Jonathan Lange", "https://jml.io", Just "https://jml.io/feeds/all.atom.xml")
+  , ("Joseph Cieslik", "https://torchhound.github.io", Just "https://torchhound.github.io/rss.xml")
   , ("Juan Pedro Villa Isaza", "https://jpvillaisaza.github.io", Just "https://jpvillaisaza.github.io/feed")
   , ("Julie Moronuki", "https://argumatronic.com", Just "https://argumatronic.com/rss.xml")
   , ("Justin Le", "https://blog.jle.im", Just "http://feeds.feedburner.com/incodeblog")
@@ -291,7 +292,6 @@ rawInitialAuthors =
   , ("James Haver II", "http://www.mchaver.com", Nothing) -- https://github.com/mchaver/mchaver.com/issues/2
   , ("Jeremy Mikkola", "http://jeremymikkola.com", Nothing) -- https://twitter.com/taylorfausak/status/972870791808405504
   , ("Jonathan Merritt", "https://lancelet.github.io", Nothing) -- https://github.com/lancelet/blog-source/issues/1
-  , ("JosephCieslik", "https://torchhound.github.io", Nothing) -- https://github.com/torchhound/torchhound.github.io/issues/2
   , ("Lorepub", "https://lorepub.com", Nothing) -- Slack
   , ("Peter Seibel", "http://www.gigamonkeys.com", Nothing) -- https://twitter.com/taylorfausak/status/973176558797185024
   , ("Philip Cunningham", "https://filib.io", Nothing) -- email
