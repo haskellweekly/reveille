@@ -125,6 +125,7 @@ rawInitialAuthors =
   , ("Giovanni Parra", "http://entulho.fiatjaf.alhur.es", Just "http://entulho.fiatjaf.alhur.es/feed.xml")
   , ("Google Summer of Code", "https://summerofcode.withgoogle.com", Just "http://feeds.feedburner.com/GoogleOpenSourceBlog")
   , ("GRAKN.AI", "https://blog.grakn.ai", Just "https://blog.grakn.ai/feed")
+  , ("Gustav Behm", "https://rootmos.github.io", Just "https://rootmos.github.io/feed.xml")
   , ("Harold Carr", "http://haroldcarr.com", Just "http://haroldcarr.com/atom.xml")
   , ("Haskell at Work", "https://haskell-at-work.com", Just "https://haskell-at-work.com/atom.xml")
   , ("Haskell for Mac", "http://blog.haskellformac.com", Just "http://blog.haskellformac.com/feed")
@@ -286,7 +287,6 @@ rawInitialAuthors =
   , ("Edsko de Vries", "http://edsko.net", Nothing) -- https://twitter.com/taylorfausak/status/973198287418417152
   , ("Elm", "http://elm-lang.org/blog", Nothing) -- https://github.com/elm-lang/elm-lang.org/issues/630
   , ("Functional Works", "https://functional.works-hub.com", Nothing) -- https://twitter.com/taylorfausak/status/971367969510092800
-  , ("Gustav Behm", "https://rootmos.github.io", Nothing) -- email
   , ("Haskell Serbia", "https://haskell-serbia.com", Nothing) -- https://github.com/haskell-serbia/haskell-serbia/issues/27
   , ("Ibnu D. Aji", "https://ibnuda.gitlab.io", Nothing) -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
   , ("James Haver II", "http://www.mchaver.com", Nothing) -- https://github.com/mchaver/mchaver.com/issues/2
