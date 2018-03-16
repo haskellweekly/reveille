@@ -277,7 +277,7 @@ rawInitialAuthors =
   , ("Will Fancher", "https://elvishjerricco.github.io", Just "https://elvishjerricco.github.io/feed.xml")
   , ("Will Yager", "https://yager.io", Just "https://yager.io/feed/")
   , ("Windows Command Line Tools For Developers", "https://blogs.msdn.microsoft.com/commandline/", Just "https://blogs.msdn.microsoft.com/commandline/feed/")
-  , ("Wit.ai", "https://wit.ai/blog", Just "https://wit.ai/blog/feed.xml")
+  , ("Wit.ai", "https://medium.com/wit-ai", Just "https://medium.com/feed/wit-ai")
   , ("Yesod", "https://www.yesodweb.com", Just "https://www.yesodweb.com/feed")
   , ("Zach Kessin", "https://get-finch.com", Just "http://get-finch.com/feed.xml")
   , ("Zw3rk Tech", "https://medium.com/@zw3rk", Just "https://medium.com/feed/@zw3rk")
