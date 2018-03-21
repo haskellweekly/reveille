@@ -49,7 +49,7 @@ initialAuthors =
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
--- Includes authors from issues up to and including 97..
+-- Includes authors up to and including issue 98.
 rawInitialAuthors :: [(String, String, Maybe String)]
 rawInitialAuthors =
   [ ("Alex Beal", "http://www.usrsb.in", Just "http://www.usrsb.in/rss.xml")
@@ -141,6 +141,7 @@ rawInitialAuthors =
   , ("Ismail S", "https://blog.ismail-s.com", Just "https://blog.ismail-s.com/index.xml")
   , ("J Haigh", "https://debugsteven.github.io", Just "https://debugsteven.github.io/feed.xml")
   , ("Jacob Errington", "https://jerrington.me", Just "https://jerrington.me/atom.xml")
+  , ("Jake Pittis", "https://jpittis.ca", Just "https://jpittis.ca/index.xml")
   , ("Jan Mas Rovira", "https://janmasrovira.gitlab.io/ascetic-slug/", Just "https://janmasrovira.gitlab.io/ascetic-slug/index.xml")
   , ("Jared Weakly", "https://jaredweakly.com", Just "https://jaredweakly.com/feed/")
   , ("Jaro Reinders", "https://noughtmare.gitlab.io", Just "https://noughtmare.gitlab.io/atom.xml")
