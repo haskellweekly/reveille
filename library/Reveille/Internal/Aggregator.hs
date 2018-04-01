@@ -8,7 +8,9 @@ import qualified Control.Monad.Trans.Class as Trans
 import qualified Control.Monad.Trans.Except as Except
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.Either as Either
+import qualified Data.List as List
 import qualified Data.Map as Map
+import qualified Data.Ord as Ord
 import qualified Data.Ratio as Ratio
 import qualified Data.Set as Set
 import qualified Data.Void as Void
@@ -77,7 +79,14 @@ updateAuthors manager database = do
     "Updating %d feed%s ...\n"
     (Set.size authors)
     (pluralize authors)
-  ((), elapsed) <- timed (mapM_ (updateAuthor manager database) authors)
+  ((), elapsed) <- timed
+    (mapM_
+      (updateAuthor manager database)
+      (List.sortBy
+        (Ord.comparing (maybe False (const True) . Author.authorFeed))
+        (Set.toAscList authors)
+      )
+    )
   Printf.printf
     "Updated %d feed%s in %.1f seconds.\n"
     (Set.size authors)
@@ -208,10 +217,9 @@ parseUrl :: Url.Url -> Either AggregatorError Client.Request
 parseUrl url = case Client.parseRequest (Url.fromUrl url) of
   Nothing -> Left (AggregatorErrorInvalidUrl url)
   Just request -> Right request
-    { Client.requestHeaders =
-      [ (Http.hAccept, Unicode.toUtf8 "*/*")
-      , (Http.hUserAgent, Unicode.toUtf8 userAgent)
-      ]
+    { Client.requestHeaders = [ (Http.hAccept, Unicode.toUtf8 "*/*")
+                              , (Http.hUserAgent, Unicode.toUtf8 userAgent)
+                              ]
     }
 
 userAgent :: String
