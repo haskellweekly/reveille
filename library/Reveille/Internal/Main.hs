@@ -90,7 +90,7 @@ rawInitialAuthors =
   , ("Code Podcast", "https://codepodcast.com", Just "https://feeds.soundcloud.com/users/soundcloud:users:201515747/sounds.rss")
   , ("Codurance", "https://codurance.com", Just "https://codurance.com/atom.xml")
   , ("Cody Goodman", "https://codygman.github.io", Just "https://codygman.github.io/atom.xml")
-  , ("Colin Woodbury", "http://fosskers.ca", Just "http://fosskers.ca/rss-en")
+  , ("Colin Woodbury", "https://www.fosskers.ca", Just "https://www.fosskers.ca/rss-en")
   , ("Concert", "https://medium.com/@concertdaw", Just "https://medium.com/feed/@concertdaw")
   , ("Csongor Kiss", "http://kcsongor.github.io", Just "http://kcsongor.github.io/feed.xml")
   , ("Dan Burton", "https://unknownparallel.wordpress.com", Just "https://unknownparallel.wordpress.com/feed/")
