@@ -104,6 +104,7 @@ rawInitialAuthors =
   , ("Deni Bertovic", "https://denibertovic.com", Just "https://denibertovic.com/rss.xml")
   , ("Dennis Felsing", "https://hookrace.net", Just "https://hookrace.net/blog/feed/")
   , ("Dennis Gosnell", "https://functor.tokyo", Just "https://functor.tokyo/blog/feed")
+  , ("Divam", "https://dfordivam.github.io", Just "https://dfordivam.github.io/atom.xml")
   , ("Echo Nolan", "http://www.echonolan.net", Just "http://www.echonolan.net/atom.xml")
   , ("Edvard H\xfc\&binette", "https://m0ar.github.io/safe-streaming/", Just "https://m0ar.github.io/safe-streaming/feed.xml")
   , ("Edward Kmett", "http://comonad.com/reader/", Just "http://comonad.com/reader/feed/")
@@ -122,7 +123,6 @@ rawInitialAuthors =
   , ("Gabriel Gonzalez", "http://www.haskellforall.com", Just "http://www.haskellforall.com/feeds/posts/default")
   , ("Getty Ritter", "https://blog.infinitenegativeutility.com", Just "https://blog.infinitenegativeutility.com/rss")
   , ("Gil Mizrahi", "https://gilmi.me", Just "https://gilmi.me/rss")
-  , ("Giovanni Parra", "http://entulho.fiatjaf.alhur.es", Just "http://entulho.fiatjaf.alhur.es/feed.xml")
   , ("Google Summer of Code", "https://summerofcode.withgoogle.com", Just "http://feeds.feedburner.com/GoogleOpenSourceBlog")
   , ("GRAKN.AI", "https://blog.grakn.ai", Just "https://blog.grakn.ai/feed")
   , ("Gustav Behm", "https://rootmos.github.io", Just "https://rootmos.github.io/feed.xml")
@@ -183,7 +183,6 @@ rawInitialAuthors =
   , ("Mark Karpov", "https://markkarpov.com", Just "https://markkarpov.com/feed.atom")
   , ("Mark Seemann", "http://blog.ploeh.dk", Just "http://blog.ploeh.dk/atom.xml")
   , ("Mark Wotton", "https://www.shimweasel.com", Just "https://www.shimweasel.com/atom.xml")
-  , ("Mateusz Kowalczyk", "http://fuuzetsu.co.uk/blog/", Just "http://fuuzetsu.co.uk/blog/atom.xml")
   , ("Matt Noonan", "http://storm-country.com", Just "http://storm-country.com/rss")
   , ("Matt Parsons", "https://www.parsonsmatt.org", Just "https://www.parsonsmatt.org/feed.xml")
   , ("Matthew Mongeau", "https://halogenandtoast.com", Just "https://halogenandtoast.com/rss/")
@@ -288,24 +287,25 @@ rawInitialAuthors =
   , ("Zw3rk Tech", "https://medium.com/@zw3rk", Just "https://medium.com/feed/@zw3rk")
 
   , ("Adam Wespiser", "https://wespiser.com", Nothing) -- https://github.com/adamwespiser/wespiser.com/issues/1
-  , ("Divam", "https://dfordivam.github.io", Nothing) -- https://github.com/dfordivam/dfordivam.github.io/issues/1
   , ("Edsko de Vries", "http://edsko.net", Nothing) -- https://twitter.com/taylorfausak/status/973198287418417152
   , ("Elm", "http://elm-lang.org/blog", Nothing) -- https://github.com/elm-lang/elm-lang.org/issues/630
   , ("Functional Works", "https://functional.works-hub.com", Nothing) -- https://twitter.com/taylorfausak/status/971367969510092800
+  , ("Giovanni Parra", "http://entulho.fiatjaf.alhur.es", Nothing) -- not sure what happened to this feed
   , ("Haskell Serbia", "https://haskell-serbia.com", Nothing) -- https://github.com/haskell-serbia/haskell-serbia/issues/27
   , ("Ibnu D. Aji", "https://ibnuda.gitlab.io", Nothing) -- https://gitlab.com/ibnuda/ibnuda.gitlab.io/issues/2
   , ("Ismail S", "https://gitlab.com/ismail-s", Nothing) -- not sure what happened to this person's blog
   , ("James Haver II", "http://www.mchaver.com", Nothing) -- https://github.com/mchaver/mchaver.com/issues/2
   , ("Jonathan Merritt", "https://lancelet.github.io", Nothing) -- https://github.com/lancelet/blog-source/issues/1
   , ("Lorepub", "https://lorepub.com", Nothing) -- Slack
+  , ("Mateusz Kowalczyk", "http://fuuzetsu.co.uk/blog/", Nothing) -- whole site is down
   , ("Peter Seibel", "http://www.gigamonkeys.com", Nothing) -- https://twitter.com/taylorfausak/status/973176558797185024
   , ("Philip Cunningham", "https://filib.io", Nothing) -- email
   , ("Philip Nilsson", "https://philipnilsson.github.io/Badness10k/", Nothing) -- https://github.com/philipnilsson/Badness10k/issues/4
   , ("Raphael Baron", "http://rbaron.net", Nothing) -- email
   , ("Renzo Carbonara", "https://ren.zone", Nothing) -- https://github.com/k0001/k0001.github.com/issues/1
   , ("Siddharth Bhat", "https://pixel-druid.com", Nothing) -- https://github.com/bollu/pixeldruid/issues/1
+  , ("Thoughtbot", "https://robots.thoughtbot.com", Nothing) -- doesn't seem to be on Feedburner anymore
   , ("Vasantha Ganesh Kanniappan", "https://blog.hustlr.in", Nothing) -- https://gitlab.com/vasanthaganeshk/hustlr-in/issues/4
   , ("Winter", "http://winterland.me", Nothing) -- https://github.com/winterland1989/winterland1989.github.io/issues/2
   , ("XT", "https://xtendo.org", Nothing) -- https://twitter.com/taylorfausak/status/973175749728505856
-  , ("Thoughtbot", "https://robots.thoughtbot.com", Nothing) -- doesn't seem to be on Feedburner anymore
   ]
