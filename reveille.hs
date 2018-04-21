@@ -14,12 +14,13 @@ import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as IO
 import qualified Data.ByteString.Lazy as LazyBytes
 import qualified Data.List as List
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.NonNull as NonNull
 import qualified Data.Ord as Ord
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import qualified Data.Text.Encoding as Encoding
 import qualified Data.Time as Time
 import qualified Data.XML.Types as Xml
@@ -56,18 +57,24 @@ type Database = Map.Map Author (Set.Set Item)
 runAggregator :: Stm.TVar Database -> IO ()
 runAggregator database =
   Monad.forever $ do
-    putStrLn "Aggregating ..."
+    logLn "Aggregating ..."
     authors <- fmap Map.keysSet (Stm.readTVarIO database)
-    mapM_ (updateAuthor database) authors
-    putStrLn "Done."
+    mapM_ (updateAuthor database) (Set.toAscList authors)
+    logLn "Done."
     Concurrent.threadDelay (60 * 60 * 1000000)
 
 updateAuthor :: Stm.TVar Database -> Author -> IO ()
 updateAuthor database author = do
+  logLn (authorName author)
   items <- fetchItems (authorFeed author)
   Stm.atomically
-    (Stm.modifyTVar database (Map.insertWith Set.union author items))
+    (Stm.modifyTVar' database (Map.insertWith Set.union author items))
   Concurrent.threadDelay 1000000
+
+logLn :: IO.MonadIO io => Text.Text -> io ()
+logLn message = IO.liftIO $ do
+  now <- Time.getCurrentTime
+  Text.putStrLn (Text.unwords [renderTime "%Y-%m-%dT%H:%M:%S%Q%z" now, message])
 
 fetchItems :: Feed -> IO (Set.Set Item)
 fetchItems feed = do
@@ -93,7 +100,9 @@ fetchFeed request parse extract convert = do
          (Conduit.fuse
             (Http.httpSource request Http.getResponseBody)
             (Conduit.fuse (Xml.parseBytes Xml.def) parse))
-         (\(_ :: Exception.SomeException) -> pure Nothing))
+         (\exception -> do
+           logLn (Text.pack (show (exception :: Exception.SomeException)))
+           pure Nothing))
   case result of
     Nothing -> pure []
     Just feed -> pure (map convert (extract feed))
@@ -278,19 +287,19 @@ isRecent time item =
   itemTime item >= Time.addUTCTime (-8 * Time.nominalDay) time
 
 data Entry = Entry
-  { entryAuthor :: Author
-  , entryItem :: Item
+  { entryAuthor :: ! Author
+  , entryItem :: ! Item
   } deriving (Eq, Ord, Show)
 
 data Author = Author
-  { authorName :: Text.Text
-  , authorLink :: Uri.URI
-  , authorFeed :: Feed
+  { authorName :: ! Text.Text
+  , authorLink :: ! Uri.URI
+  , authorFeed :: ! Feed
   } deriving (Eq, Ord, Show)
 
 data Feed = Feed
-  { feedType :: FeedType
-  , feedLink :: Uri.URI
+  { feedType :: ! FeedType
+  , feedLink :: ! Uri.URI
   } deriving (Eq, Ord, Show)
 
 data FeedType
@@ -299,9 +308,9 @@ data FeedType
   deriving (Eq, Ord, Show)
 
 data Item = Item
-  { itemTime :: Time.UTCTime
-  , itemName :: Text.Text
-  , itemLink :: Uri.URI
+  { itemTime :: ! Time.UTCTime
+  , itemName :: ! Text.Text
+  , itemLink :: ! Uri.URI
   } deriving (Eq, Ord, Show)
 
 initialDatabase :: Database
