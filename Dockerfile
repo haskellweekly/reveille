@@ -26,5 +26,6 @@ FROM debian:9.3-slim
 
   RUN apt-get update && apt-get install --assume-yes ca-certificates libgmp-dev netbase
   COPY --from=build /root/.local/bin/reveille /usr/local/bin
-  EXPOSE 8080
+  ENV PORT=80
+  EXPOSE 80
   CMD reveille

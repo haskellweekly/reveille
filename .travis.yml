@@ -25,9 +25,8 @@ before_install:
 
 install:
   - stack setup
-  - stack build --only-dependencies --test
+  - stack build --only-dependencies
 
 script:
-  - stack build --no-run-tests --pedantic --test
-  - stack build --test
+  - stack build --pedantic
   - stack sdist
