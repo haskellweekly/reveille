@@ -13,7 +13,7 @@ cache:
 before_install:
   - > # Install Stack.
     ROOT='https://github.com/commercialhaskell/stack' &&
-    VERSION='1.6.5' &&
+    VERSION='1.7.1' &&
     DIR="stack-$VERSION-linux-x86_64" &&
     FILE="$DIR.tar.gz" &&
     URL="$ROOT/releases/download/v$VERSION/$FILE" &&
