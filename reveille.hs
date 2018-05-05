@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main
@@ -9,10 +10,10 @@ import qualified Control.Concurrent as Concurrent
 import qualified Control.Concurrent.Async as Async
 import qualified Control.Exception as Exception
 import qualified Control.Monad as Monad
-import qualified Control.Monad.IO.Class as IO
 import qualified Data.ByteString as Bytes
 import qualified Data.ByteString.Builder as Builder
 import qualified Data.ByteString.Lazy as LazyBytes
+import qualified Data.Either as Either
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.NonNull as NonNull
@@ -87,19 +88,19 @@ logger :: Wai.Request -> Http.Status -> Maybe Integer -> IO ()
 logger request status _ =
   putStrLn
     (concat
-       [ fromUtf8 (Wai.requestMethod request)
+       [ Either.fromRight "?" (fromUtf8 (Wai.requestMethod request))
        , " "
-       , fromUtf8 (Wai.rawPathInfo request)
-       , fromUtf8 (Wai.rawQueryString request)
+       , Either.fromRight "?" (fromUtf8 (Wai.rawPathInfo request))
+       , Either.fromRight "?" (fromUtf8 (Wai.rawQueryString request))
        , " "
        , show (Http.statusCode status)
        ])
 
-fromUtf8 :: Bytes.ByteString -> String
+fromUtf8 :: Bytes.ByteString -> Either String String
 fromUtf8 bytes =
   case Text.decodeUtf8' bytes of
-    Left problem -> error (show problem) -- TODO
-    Right text -> Text.unpack text
+    Left unicodeException -> Left (Exception.displayException unicodeException)
+    Right text -> Right (Text.unpack text)
 
 onExceptionResponse :: Exception.SomeException -> Wai.Response
 onExceptionResponse _ =
@@ -136,8 +137,13 @@ syncFeeds connection feeds_ = do
 syncFeed :: Sqlite.Connection -> Feed -> IO ()
 syncFeed connection feed = do
   putStrLn (concat ["Syncing <", feedUrl feed, "> ..."])
-  items <- fetchFeed feed
-  insertItems connection items
+  result <- fetchFeed feed
+  case result of
+    Left problem -> putStrLn problem
+    Right results -> do
+      let (problems, items) = Either.partitionEithers results
+      mapM_ putStrLn problems
+      insertItems connection items
   putStrLn (concat ["Synced <", feedUrl feed, ">."])
 
 insertItems :: Sqlite.Connection -> [Item] -> IO ()
@@ -155,7 +161,7 @@ insertItem connection item = do
     \ values ( ? , ? , ? , ? ) "
     (itemAuthor item, itemName item, itemTime item, itemLink item)
 
-fetchFeed :: Feed -> IO [Item]
+fetchFeed :: Feed -> IO (Either String [Either String Item])
 fetchFeed feed = do
   request <- Client.parseRequest (feedUrl feed)
   Conduit.runConduitRes
@@ -163,9 +169,11 @@ fetchFeed feed = do
        (Conduit.fuse
           (Client.httpSource (withHeaders request) Client.getResponseBody)
           (Conduit.fuse (Xml.parseBytes Xml.def) (parseFeed (feedFormat feed))))
-       (\exception -> do
-          IO.liftIO (print (exception :: Exception.SomeException))
-          pure []))
+       (\exception ->
+          pure
+            (Left
+               (Exception.displayException
+                  (exception :: Exception.SomeException)))))
 
 withHeaders :: Client.Request -> Client.Request
 withHeaders request =
@@ -182,32 +190,33 @@ toUtf8 string = Text.encodeUtf8 (Text.pack string)
 
 parseFeed ::
      Format
-  -> Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) [Item]
+  -> Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) (Either String [Either String Item])
 parseFeed format =
   case format of
     FormatAtom -> parseAtom
     FormatRss -> parseRss
 
 parseAtom ::
-     Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) [Item]
+     Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) (Either String [Either String Item])
 parseAtom = do
   maybeAtomFeed <- Atom.atomFeed
   case maybeAtomFeed of
-    Nothing -> error "invalid atom feed" -- TODO
-    Just atomFeed -> pure (extractAtomItems atomFeed)
+    Nothing -> pure (Left "invalid atom feed")
+    Just atomFeed -> pure (Right (extractAtomItems atomFeed))
 
-extractAtomItems :: Atom.AtomFeed -> [Item]
+extractAtomItems :: Atom.AtomFeed -> [Either String Item]
 extractAtomItems atomFeed =
   map (extractAtomItem atomFeed) (Atom.feedEntries atomFeed)
 
-extractAtomItem :: Atom.AtomFeed -> Atom.AtomEntry -> Item
+extractAtomItem :: Atom.AtomFeed -> Atom.AtomEntry -> Either String Item
 extractAtomItem atomFeed atomEntry =
-  Item
-    { itemAuthor = fromAtomText (Atom.feedTitle atomFeed)
-    , itemName = fromAtomText (Atom.entryTitle atomEntry)
-    , itemTime = Atom.entryUpdated atomEntry
-    , itemLink = Atom.entryId atomEntry
-    }
+  Right
+    Item
+      { itemAuthor = fromAtomText (Atom.feedTitle atomFeed)
+      , itemName = fromAtomText (Atom.entryTitle atomEntry)
+      , itemTime = Atom.entryUpdated atomEntry
+      , itemLink = Atom.entryId atomEntry
+      }
 
 fromAtomText :: Atom.AtomText -> Text.Text
 fromAtomText atomText =
@@ -219,36 +228,41 @@ fromAtomText atomText =
     Atom.AtomXHTMLText text -> text -- TODO
 
 parseRss ::
-     Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) [Item]
+     Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) (Either String [Either String Item])
 parseRss = do
   maybeRssDocument <- Rss.rssDocument
   case maybeRssDocument of
-    Nothing -> error "invalid rss feed" -- TODO
-    Just rssDocument -> pure (extractRssItems rssDocument)
+    Nothing -> pure (Left "invalid rss feed")
+    Just rssDocument -> pure (Right (extractRssItems rssDocument))
 
-extractRssItems :: Rss.RssDocument' -> [Item]
+extractRssItems :: Rss.RssDocument' -> [Either String Item]
 extractRssItems rssDocument =
   map (extractRssItem rssDocument) (Rss.channelItems rssDocument)
 
-extractRssItem :: Rss.RssDocument' -> Rss.RssItem' -> Item
-extractRssItem rssDocument rssItem =
-  Item
-    { itemAuthor = Rss.channelTitle rssDocument
-    , itemName = Rss.itemTitle rssItem
-    , itemTime = Maybe.fromMaybe (error "no pub date") (Rss.itemPubDate rssItem) -- TODO
-    , itemLink =
-        case Rss.itemLink rssItem of
-          Nothing -> error "no link" -- TODO
-          Just rssUri -> Rss.withRssURI renderUri rssUri
-    }
+extractRssItem :: Rss.RssDocument' -> Rss.RssItem' -> Either String Item
+extractRssItem rssDocument rssItem = do
+  itemTime <-
+    case Rss.itemPubDate rssItem of
+      Nothing -> Left "no pub date"
+      Just time -> Right time
+  itemLink <-
+    case Rss.itemLink rssItem of
+      Nothing -> Left "no link"
+      Just rssUri -> Rss.withRssURI renderUri rssUri
+  Right
+    Item
+      { itemAuthor = Rss.channelTitle rssDocument
+      , itemName = Rss.itemTitle rssItem
+      , itemTime
+      , itemLink
+      }
 
-renderUri :: Uri.URIRef a -> Text.Text
+renderUri :: Uri.URIRef a -> Either String Text.Text
 renderUri uri =
-  case Text.decodeUtf8'
-         (LazyBytes.toStrict
-            (Builder.toLazyByteString (Uri.serializeURIRef uri))) of
-    Left _ -> error "invalid utf-8 text" -- TODO
-    Right text -> text
+  fmap
+    Text.pack
+    (fromUtf8
+       (LazyBytes.toStrict (Builder.toLazyByteString (Uri.serializeURIRef uri))))
 
 runServer :: Warp.Settings -> Sqlite.Connection -> IO ()
 runServer settings connection =
@@ -285,29 +299,39 @@ getRecentItems connection =
 
 itemsToHtml :: [Item] -> Lucid.Html ()
 itemsToHtml items =
-  Lucid.doctypehtml_ $ do
-    Lucid.head_ $ do
-      Lucid.meta_ [Lucid.charset_ "utf-8"]
-      Lucid.title_ "Reveille"
-      Lucid.link_ [Lucid.rel_ "alternate", Lucid.href_ "/feed.atom"]
-    Lucid.body_ $ do
-      Lucid.h1_ "Reveille"
-      Lucid.ul_ (foldMap itemToHtml items)
-      Lucid.p_
-        (Lucid.a_
-           [Lucid.href_ "https://github.com/haskellweekly/reveille"]
-           "github.com/haskellweekly/reveille")
+  Lucid.doctypehtml_
+    (mconcat
+       [ Lucid.head_
+           (mconcat
+              [ Lucid.meta_ [Lucid.charset_ "utf-8"]
+              , Lucid.title_ "Reveille"
+              , Lucid.link_ [Lucid.rel_ "alternate", Lucid.href_ "/feed.atom"]
+              ])
+       , Lucid.body_
+           (mconcat
+              [ Lucid.h1_ "Reveille"
+              , Lucid.ul_ (foldMap itemToHtml items)
+              , Lucid.p_
+                  (Lucid.a_
+                     [Lucid.href_ "https://github.com/haskellweekly/reveille"]
+                     "github.com/haskellweekly/reveille")
+              ])
+       ])
 
 itemToHtml :: Item -> Lucid.Html ()
 itemToHtml item =
-  Lucid.li_ $ do
-    Lucid.a_ [Lucid.href_ (itemLink item)] (Lucid.toHtml (itemName item))
-    Lucid.span_ " from "
-    Lucid.span_ (Lucid.toHtml (itemAuthor item))
-    Lucid.span_ " on "
-    Lucid.time_
-      [Lucid.datetime_ (renderTime "%Y-%m-%dT%H:%M:%S%Q%z" (itemTime item))]
-      (Lucid.toHtml (renderTime "%A, %B %e, %Y" (itemTime item)))
+  Lucid.li_
+    (mconcat
+       [ Lucid.a_ [Lucid.href_ (itemLink item)] (Lucid.toHtml (itemName item))
+       , Lucid.span_ " from "
+       , Lucid.span_ (Lucid.toHtml (itemAuthor item))
+       , Lucid.span_ " on "
+       , Lucid.time_
+           [ Lucid.datetime_
+               (renderTime "%Y-%m-%dT%H:%M:%S%Q%z" (itemTime item))
+           ]
+           (Lucid.toHtml (renderTime "%A, %B %e, %Y" (itemTime item)))
+       ])
 
 renderTime :: Text.Text -> Time.UTCTime -> Text.Text
 renderTime format time =
@@ -317,59 +341,66 @@ feedHandler :: Sqlite.Connection -> Handler
 feedHandler connection respond = do
   now <- Time.getCurrentTime
   items <- getRecentItems connection
-  xml <- renderAtom (itemsToAtom now items)
+  atom <- either fail pure (itemsToAtom now items)
+  xml <- renderAtom atom
   respond
     (Wai.responseLBS
        Http.ok200
        [(Http.hContentType, "application/atom+xml")]
        xml)
 
-itemsToAtom :: Time.UTCTime -> [Item] -> Atom.AtomFeed
-itemsToAtom time items =
-  Atom.AtomFeed
-    { Atom.feedAuthors = []
-    , Atom.feedCategories = []
-    , Atom.feedContributors = []
-    , Atom.feedEntries = map itemToAtom items
-    , Atom.feedGenerator = Nothing
-    , Atom.feedIcon = Nothing
-    , Atom.feedId = Text.pack "https://reveille.haskellweekly.news/feed.atom"
-    , Atom.feedLinks = []
-    , Atom.feedLogo = Nothing
-    , Atom.feedRights = Nothing
-    , Atom.feedSubtitle = Nothing
-    , Atom.feedTitle = Atom.AtomPlainText Atom.TypeText "Reveille"
-    , Atom.feedUpdated =
-        Maybe.fromMaybe
-          time
-          (Maybe.listToMaybe (List.sortOn Ord.Down (map itemTime items)))
-    }
+itemsToAtom :: Time.UTCTime -> [Item] -> Either String Atom.AtomFeed
+itemsToAtom time items = do
+  entries <- mapM itemToAtom items
+  Right
+    Atom.AtomFeed
+      { Atom.feedAuthors = []
+      , Atom.feedCategories = []
+      , Atom.feedContributors = []
+      , Atom.feedEntries = entries
+      , Atom.feedGenerator = Nothing
+      , Atom.feedIcon = Nothing
+      , Atom.feedId = Text.pack "https://reveille.haskellweekly.news/feed.atom"
+      , Atom.feedLinks = []
+      , Atom.feedLogo = Nothing
+      , Atom.feedRights = Nothing
+      , Atom.feedSubtitle = Nothing
+      , Atom.feedTitle = Atom.AtomPlainText Atom.TypeText "Reveille"
+      , Atom.feedUpdated =
+          Maybe.fromMaybe
+            time
+            (Maybe.listToMaybe (List.sortOn Ord.Down (map itemTime items)))
+      }
 
-itemToAtom :: Item -> Atom.AtomEntry
-itemToAtom item =
-  Atom.AtomEntry
-    { Atom.entryAuthors = [toAtomPerson (itemAuthor item)]
-    , Atom.entryCategories = []
-    , Atom.entryContent = Nothing
-    , Atom.entryContributors = []
-    , Atom.entryId = itemLink item
-    , Atom.entryLinks = []
-    , Atom.entryPublished = Nothing
-    , Atom.entryRights = Nothing
-    , Atom.entrySource = Nothing
-    , Atom.entrySummary = Nothing
-    , Atom.entryTitle = Atom.AtomPlainText Atom.TypeText (itemName item)
-    , Atom.entryUpdated = itemTime item
-    }
+itemToAtom :: Item -> Either String Atom.AtomEntry
+itemToAtom item = do
+  author <- toAtomPerson (itemAuthor item)
+  Right
+    Atom.AtomEntry
+      { Atom.entryAuthors = [author]
+      , Atom.entryCategories = []
+      , Atom.entryContent = Nothing
+      , Atom.entryContributors = []
+      , Atom.entryId = itemLink item
+      , Atom.entryLinks = []
+      , Atom.entryPublished = Nothing
+      , Atom.entryRights = Nothing
+      , Atom.entrySource = Nothing
+      , Atom.entrySummary = Nothing
+      , Atom.entryTitle = Atom.AtomPlainText Atom.TypeText (itemName item)
+      , Atom.entryUpdated = itemTime item
+      }
 
-toAtomPerson :: Text.Text -> Atom.AtomPerson
-toAtomPerson name =
-  Atom.AtomPerson
-    { Atom.personName =
-        Maybe.fromMaybe (error "empty name") (NonNull.fromNullable name)
-    , Atom.personEmail = Text.empty
-    , Atom.personUri = Nothing
-    }
+toAtomPerson :: Text.Text -> Either String Atom.AtomPerson
+toAtomPerson name = do
+  personName <-
+    maybe (Left "toAtomPerson: empty name") Right (NonNull.fromNullable name)
+  Right
+    Atom.AtomPerson
+      { Atom.personName = personName
+      , Atom.personEmail = Text.empty
+      , Atom.personUri = Nothing
+      }
 
 renderAtom :: Atom.AtomFeed -> IO LazyBytes.ByteString
 renderAtom atom =
@@ -392,13 +423,11 @@ data Item = Item
 
 instance Sqlite.FromRow Item where
   fromRow = do
-    author <- Sqlite.field
-    name <- Sqlite.field
-    time <- Sqlite.field
-    link <- Sqlite.field
-    pure
-      Item
-        {itemAuthor = author, itemName = name, itemTime = time, itemLink = link}
+    itemAuthor <- Sqlite.field
+    itemName <- Sqlite.field
+    itemTime <- Sqlite.field
+    itemLink <- Sqlite.field
+    pure Item {itemAuthor, itemName, itemTime, itemLink}
 
 data Feed = Feed
   { feedFormat :: Format
@@ -413,7 +442,7 @@ data Format
 feeds :: [Feed]
 feeds =
   [ Feed { feedFormat = FormatAtom, feedUrl = "https://haskellweekly.news/haskell-weekly.atom" }
-
+  
   , Feed { feedFormat = FormatAtom, feedUrl = "http://allocinit.io/feed.xml" }
   , Feed { feedFormat = FormatAtom, feedUrl = "http://baatz.io/atom.xml" }
   , Feed { feedFormat = FormatAtom, feedUrl = "http://bitemyapp.com/atom.xml" }
@@ -623,30 +652,31 @@ feeds =
   , Feed { feedFormat = FormatRss, feedUrl = "https://www.twilio.com/blog/feed" }
   , Feed { feedFormat = FormatRss, feedUrl = "https://yager.io/feed/" }
 
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "http://chriswarbo.net/blog.atom" } -- TODO: invalid date
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "http://degoes.net/feed.xml" } -- TODO: invalid end element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "http://kcsongor.github.io/feed.xml" } -- TODO: invalid date
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://abhiroop.github.io/feed.xml" } -- TODO: null element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://blog.infinitenegativeutility.com/rss" } -- TODO: invalid date
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://blue-dinosaur.github.io/feed.xml" } -- TODO: null element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://chairnerd.seatgeek.com/atom.xml" } -- TODO: null element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://codurance.com/atom.xml" } -- TODO: missing updated element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://debugsteven.github.io/feed.xml" } -- TODO: null element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://feeds.feedburner.com/ezyang" } -- TODO: missing updated element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://jml.io/feeds/all.atom.xml" } -- TODO: insecure
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://m0ar.github.io/safe-streaming/feed.xml" } -- TODO: null element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://quasimal.com/feed.xml" } -- TODO: insecure
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://www.fpcomplete.com/blog/atom.xml" } -- TODO: missing name element
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://www.morphism.tech/feed/" } -- TODO: insecure
-  -- , Feed { feedFormat = FormatAtom, feedUrl = "https://www.well-typed.com/blog/atom.xml" } -- TODO: invalid end element
-  -- , Feed { feedFormat = FormatRss, feedUrl = "http://gilmi.me/blog/rss" } -- TODO: malformed path
-  -- , Feed { feedFormat = FormatRss, feedUrl = "http://jxv.io/blog/rss.xml" } -- TODO: invalid time
-  -- , Feed { feedFormat = FormatRss, feedUrl = "http://keera.co.uk/blog/feed/" } -- TODO: invalid feed
-  -- , Feed { feedFormat = FormatRss, feedUrl = "http://storm-country.com/rss" } -- TODO: no pub date
-  -- , Feed { feedFormat = FormatRss, feedUrl = "https://joyofhaskell.com/rss.xml" } -- TODO: invalid end element
-  -- , Feed { feedFormat = FormatRss, feedUrl = "https://jstoelm.libsyn.com/rss" } -- TODO: invalid end element
-  -- , Feed { feedFormat = FormatRss, feedUrl = "https://open.bekk.no/feed/Technology" } -- TODO: invalid time
-  -- , Feed { feedFormat = FormatRss, feedUrl = "https://tech-blog.capital-match.com/feed.rss" } -- TODO: invalid time
-  -- , Feed { feedFormat = FormatRss, feedUrl = "https://www.haskellcast.com/feed.xml" } -- TODO : invalid end element
+  , Feed { feedFormat = FormatAtom, feedUrl = "http://chriswarbo.net/blog.atom" } -- TODO: invalid date
+  , Feed { feedFormat = FormatAtom, feedUrl = "http://degoes.net/feed.xml" } -- TODO: invalid end element
+  , Feed { feedFormat = FormatAtom, feedUrl = "http://kcsongor.github.io/feed.xml" } -- TODO: invalid date
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://abhiroop.github.io/feed.xml" } -- TODO: null element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://blog.infinitenegativeutility.com/rss" } -- TODO: invalid date
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://blue-dinosaur.github.io/feed.xml" } -- TODO: null element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://chairnerd.seatgeek.com/atom.xml" } -- TODO: null element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://codurance.com/atom.xml" } -- TODO: missing updated element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://debugsteven.github.io/feed.xml" } -- TODO: null element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://feeds.feedburner.com/ezyang" } -- TODO: missing updated element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://jml.io/feeds/all.atom.xml" } -- TODO: insecure
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://m0ar.github.io/safe-streaming/feed.xml" } -- TODO: null element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://quasimal.com/feed.xml" } -- TODO: insecure
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://www.fpcomplete.com/blog/atom.xml" } -- TODO: missing name element
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://www.morphism.tech/feed/" } -- TODO: insecure
+  , Feed { feedFormat = FormatAtom, feedUrl = "https://www.well-typed.com/blog/atom.xml" } -- TODO: invalid end element
+
+  , Feed { feedFormat = FormatRss, feedUrl = "http://gilmi.me/blog/rss" } -- TODO: malformed path
+  , Feed { feedFormat = FormatRss, feedUrl = "http://jxv.io/blog/rss.xml" } -- TODO: invalid time
+  , Feed { feedFormat = FormatRss, feedUrl = "http://keera.co.uk/blog/feed/" } -- TODO: invalid feed
+  , Feed { feedFormat = FormatRss, feedUrl = "http://storm-country.com/rss" } -- TODO: no pub date
+  , Feed { feedFormat = FormatRss, feedUrl = "https://joyofhaskell.com/rss.xml" } -- TODO: invalid end element
+  , Feed { feedFormat = FormatRss, feedUrl = "https://jstoelm.libsyn.com/rss" } -- TODO: invalid end element
+  , Feed { feedFormat = FormatRss, feedUrl = "https://open.bekk.no/feed/Technology" } -- TODO: invalid time
+  , Feed { feedFormat = FormatRss, feedUrl = "https://tech-blog.capital-match.com/feed.rss" } -- TODO: invalid time
+  , Feed { feedFormat = FormatRss, feedUrl = "https://www.haskellcast.com/feed.xml" } -- TODO : invalid end element
 
   ]
