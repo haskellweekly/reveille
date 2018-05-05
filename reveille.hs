@@ -224,8 +224,8 @@ fromAtomText atomText =
     Atom.AtomPlainText textType text ->
       case textType of
         Atom.TypeText -> text
-        Atom.TypeHTML -> text -- TODO
-    Atom.AtomXHTMLText text -> text -- TODO
+        Atom.TypeHTML -> text -- TODO: unescape this
+    Atom.AtomXHTMLText text -> text -- TODO: unescape this too
 
 parseRss ::
      Conduit.ConduitM Xml.Event Conduit.Void (Conduit.ResourceT IO) (Either String [Either String Item])
@@ -415,10 +415,10 @@ notFoundHandler respond =
   respond (Wai.responseLBS Http.notFound404 [] LazyBytes.empty)
 
 data Item = Item
-  { itemAuthor :: Text.Text
-  , itemName :: Text.Text
+  { itemAuthor :: Text.Text -- TODO: make non null
+  , itemName :: Text.Text -- TODO: make non null
   , itemTime :: Time.UTCTime
-  , itemLink :: Text.Text
+  , itemLink :: Text.Text -- TODO: make uri
   } deriving (Eq, Show)
 
 instance Sqlite.FromRow Item where
@@ -442,7 +442,7 @@ data Format
 feeds :: [Feed]
 feeds =
   [ Feed { feedFormat = FormatAtom, feedUrl = "https://haskellweekly.news/haskell-weekly.atom" }
-  
+
   , Feed { feedFormat = FormatAtom, feedUrl = "http://allocinit.io/feed.xml" }
   , Feed { feedFormat = FormatAtom, feedUrl = "http://baatz.io/atom.xml" }
   , Feed { feedFormat = FormatAtom, feedUrl = "http://bitemyapp.com/atom.xml" }
