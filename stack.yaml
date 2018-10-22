@@ -1,1 +1,2 @@
-resolver: lts-11.0
+# https://docs.haskellstack.org/en/stable/yaml_configuration/#project-specific-config
+resolver: lts-12.0
