@@ -75,6 +75,10 @@ index :: Set.Set Item -> Lucid.Html ()
 index items = Lucid.doctypehtml_ do
   Lucid.head_ do
     Lucid.meta_ [Lucid.charset_ (Text.pack "utf-8")]
+    Lucid.meta_
+      [ Lucid.name_ (Text.pack "viewport")
+      , Lucid.content_ (Text.pack "initial-scale = 1, width = device-width")
+      ]
     Lucid.title_ (Lucid.toHtml "Haskell Weekly \x2192 Reveille")
   Lucid.body_ do
     Lucid.h1_ (Lucid.toHtml "Haskell Weekly \x2192 Reveille")
@@ -139,8 +143,11 @@ runWorker config items = do
     say ("got " <> pluralize (length authors) "author" <> " total")
     say "syncing authors"
     Monad.forM_ authors \ author ->
-      Exception.catch (syncAuthor manager items author) \ exception ->
-        say (show (exception :: Exception.SomeException))
+      Exception.catches
+        (syncAuthor manager items author)
+        [ Exception.Handler (\ e -> say (show (e :: Exception.IOException)))
+        , Exception.Handler (\ e -> say (show (e :: Client.HttpException)))
+        ]
     say "done syncing authors"
     Concurrent.threadDelay 600_000_000
 
